@@ -221,6 +221,36 @@ void test_collect_learned_vs_due(void) {
     printf("  collect_learned_vs_due OK\n");
 }
 
+void test_collect_learned_batch_cap(void) {
+    // Reverse UI passes VOCAB_REV_BATCH, not 64: 15 learned words must
+    // still yield a 10-card session.
+    vocab_test_advance_days(1);
+    static char terms[15][16], phons[15][16], defs[15][16];
+    vocab_entry_t many[15];
+    for (int i = 0; i < 15; i++) {
+        snprintf(terms[i], sizeof(terms[i]), "b%d", i);
+        snprintf(phons[i], sizeof(phons[i]), "/b%d/", i);
+        snprintf(defs[i], sizeof(defs[i]), "d%d", i);
+        many[i].term = terms[i];
+        many[i].phonetic = phons[i];
+        many[i].definition = defs[i];
+        many[i].distractors[0] = (uint16_t)((i + 1) % 15);
+        many[i].distractors[1] = (uint16_t)((i + 2) % 15);
+    }
+    vocab_init(many, 15);
+    vocab_set_daily_cap(15);
+    for (int i = 0; i < 15; i++) {
+        int idx = vocab_next_due();
+        assert(idx >= 0);
+        vocab_review((uint16_t)idx, VOCAB_GOOD);
+    }
+    uint16_t buf[16];
+    assert(VOCAB_REV_BATCH == 10);
+    assert(vocab_collect_learned(buf, VOCAB_REV_BATCH) == VOCAB_REV_BATCH);
+    assert(vocab_collect_learned(buf, 64) == 15);
+    printf("  collect_learned_batch_cap OK\n");
+}
+
 int main(void) {
     test_fsrs_basic();
     test_fsrs_retrievability();
@@ -229,6 +259,7 @@ int main(void) {
     test_daily_budget();
     test_forget_new_advances_and_counts_once();
     test_collect_learned_vs_due();
+    test_collect_learned_batch_cap();
     printf("ALL VOCAB FSRS TESTS PASS\n");
     return 0;
 }

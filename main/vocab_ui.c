@@ -168,7 +168,7 @@ static void rev_show_answer(void)
 static void rev_start(ui_state_t mode)
 {
     s_state = mode;
-    s_rev_n = vocab_collect_learned(s_rev_q, 64);
+    s_rev_n = vocab_collect_learned(s_rev_q, VOCAB_REV_BATCH);
     s_rev_i = 0;
     s_rq_head = s_rq_tail = 0;
     if (s_rev_n == 0) {
@@ -180,6 +180,7 @@ static void rev_start(ui_state_t mode)
     rev_next();
     if (s_state == ST_REV_RECALL) rev_show_prompt();
     else rev_show_choice();
+    refresh_stats();
 }
 
 // deterministic 3-way shuffle of target + its two distractors
@@ -207,7 +208,7 @@ static void rev_show_choice(void)
     snprintf(buf, sizeof(buf), "1. %-14s 2. %-14s 3. %s", opts[0], opts[1], opts[2]);
     lv_label_set_text(s_def_lbl, buf);
     lv_obj_clear_flag(s_def_lbl, LV_OBJ_FLAG_HIDDEN);
-    lv_label_set_text(s_hint_lbl, deskpet_tr(S_VOCAB_RATE, deskpet_get_lang()));
+    lv_label_set_text(s_hint_lbl, deskpet_tr(S_VOCAB_PICK, deskpet_get_lang()));
 }
 
 static void show_menu(void)
@@ -247,6 +248,15 @@ static void show_menu(void)
 
 static void refresh_stats(void)
 {
+    if (s_state == ST_REV_RECALL || s_state == ST_REV_CHOICE
+        || s_state == ST_REV_CHOICE_ANSWER) {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%s %d/%d",
+                 deskpet_tr(S_VOCAB_REVERSE, deskpet_get_lang()),
+                 s_rev_i, s_rev_n);
+        lv_label_set_text(s_stat_lbl, buf);
+        return;
+    }
     int rev_done = s_rev_done < s_rev_total ? s_rev_done : s_rev_total;
     int rev_total = s_rev_total > s_rev_done ? s_rev_total : s_rev_done;
     char rev[24], nu[24], drill[24];
@@ -371,12 +381,16 @@ void vocab_ui_button(int btn)
         // same stem was already rated in today's forward pass. Otherwise a
         // reverse miss leaves no FSRS trace (s_seen is shared with study).
         rate_commit(idx, btn == 0 ? VOCAB_AGAIN : (btn == 1 ? VOCAB_HARD : VOCAB_GOOD), true);
-        if (btn == 0) rq_push(idx);
+        // One pass: 忘记 still lapses FSRS, but does not requeue. Reverse
+        // used the forward drill ring and never drained (device: 没完没了).
         audio_se(CT_SE_OK);
         s_done_count++;
-        refresh_stats();
-        if (rev_next()) rev_show_prompt();
-        else show_menu();
+        if (rev_next()) {
+            rev_show_prompt();
+            refresh_stats();
+        } else {
+            show_menu();
+        }
         return;
     }
 
@@ -385,7 +399,6 @@ void vocab_ui_button(int btn)
         seen_set(idx);
         bool right = ((uint8_t)btn == s_choice_answer);
         rate_commit(idx, right ? VOCAB_GOOD : VOCAB_AGAIN, true);
-        if (!right) rq_push(idx);
         audio_se(CT_SE_OK);
         s_done_count++;
         refresh_stats();
@@ -395,9 +408,17 @@ void vocab_ui_button(int btn)
     }
 
     if (s_state == ST_REV_CHOICE_ANSWER) {
-        // any button dismisses the verdict page
-        if (rev_next()) rev_show_choice();
-        else show_menu();
+        // any button dismisses the verdict page. MUST return to
+        // ST_REV_CHOICE: staying in ANSWER made every later press skip
+        // scoring and the verdict screen (device: 只有第一次提示, then
+        // endless taps with no end).
+        if (rev_next()) {
+            s_state = ST_REV_CHOICE;
+            rev_show_choice();
+            refresh_stats();
+        } else {
+            show_menu();
+        }
         return;
     }
 

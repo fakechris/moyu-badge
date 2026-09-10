@@ -21,6 +21,9 @@
 
 #define VOCAB_MAX_WORDS 500
 #define VOCAB_NVS_NS    "vocab"
+// Reverse session is a one-pass production drill, not the whole learned
+// pool. 64 cards on a 3-button badge never ends; 10 matches 超额再背.
+#define VOCAB_REV_BATCH 10
 
 // Rating buttons (mapped to 3 physical buttons)
 typedef enum {
@@ -103,7 +106,7 @@ uint16_t vocab_collect_due_reviews(uint16_t *out, uint16_t max);
 // Snapshot of every introduced word (reps>0), lowest retrievability first.
 // Reverse-practice trains production on the learned pool, not the due-review
 // subset — same-day R is ~1.0, so a due-only pool is empty after today's
-// new words. Caps at `max` (callers pass 64). Returns count.
+// new words. Caps at `max` (UI passes VOCAB_REV_BATCH). Returns count.
 uint16_t vocab_collect_learned(uint16_t *out, uint16_t max);
 
 #endif // VOCAB_MODEL_H
