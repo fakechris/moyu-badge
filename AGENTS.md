@@ -35,9 +35,26 @@ OC 固件目录 `main/sprites/oc/` 与 `sdkconfig.oc` 均 gitignore；OC 构建 
 - 固件构建：`PATH="$HOME/.espressif/python_env/idf5.5_py3.14_env/bin:$PATH"` 先于
   `source ~/esp/esp-idf-v5.5.3/export.sh`。
 
-## 分支、刷机、工作跟踪
+## 分支梯队（循环每轮都提交，但你只 merge rc）
 
-- `main` = 发版线。自治迭代在 `../moyu-badge-autogoal`（worktree，分支 `autogoal`），
-  经 `autogoal-rc` 晋升；**本仓只 `git merge autogoal-rc`**。
-- 刷机由本仓操作者执行；循环无串口权限。`cardid` / `recovery` 永不写入，禁 `erase-flash`。
-- 产品工作图在 Involute **INV-65**（DeskPet）。本仓不另建 TODO 清单。
+循环在 `../moyu-badge-autogoal`。**每轮都在 `autogoal` 上提交**——这是草稿区，
+中间结果和半成品都可能在这里，下一轮可以自己回滚。不要把「每轮提交」理解成
+每轮都能进 `main`。
+
+| 分支 | 定位 | 谁动 |
+|---|---|---|
+| `autogoal` | 工作草稿。每轮提交，可回滚 | 循环 |
+| `autogoal-rc` | 候选发布线。只有晋升的提交 | 循环按条款推进 |
+| `main` | 发版线 | **只 `git merge autogoal-rc`**；禁止 merge `autogoal` |
+
+晋升条款写在 playbook `docs/OPTIMIZATION_GOAL.md` **§5.3**（不是循环的记忆）。必须全部满足：
+
+1. 该提交自身全套件绿；触及 `main/` 固件的轮次还要同轮 `idf.py build` 绿。
+2. **浸润**：固件杠杆必须在其后一轮复测仍达标、门仍绿（至少测两轮）。纯 tools/docs 可当轮晋升。
+3. 杠杆完整，非半成品，无已知未决回归。
+4. 写入 `docs/RELEASE_CANDIDATES.md`（commit、杠杆、指标增量、约 5 分钟真机核对清单、回滚指针），并打 tag `autogoal-rc-N`。
+
+循环验证不了真机手感。它只负责把过了客观门槛 + 浸润的提交递到 rc 线，并附刷机前清单。
+刷机由本仓操作者执行；循环无串口权限。`cardid` / `recovery` 永不写入，禁 `erase-flash`。
+
+产品工作图在 Involute **INV-65**。本仓不另建 TODO 清单。
