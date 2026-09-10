@@ -1,0 +1,58 @@
+// main/deskpet_i18n.h —— string-ID table, EN + ZH. Single source for UI text
+// and for the ZH subset-font charset scanner (tools/gen_zh_subset.py).
+#pragma once
+
+#include <stdbool.h>
+
+typedef enum {
+    LANG_EN = 0,
+    LANG_ZH = 1,
+} deskpet_lang_t;
+
+typedef enum {
+    S_DESKPET = 0,
+    S_EXPLORE, S_POMO, S_SETTINGS,
+    S_BACK, S_ON, S_OFF, S_LANGUAGE,
+    S_MOOD_NORMAL, S_MOOD_HAPPY, S_MOOD_SAD, S_MOOD_BUSY,
+    S_MOOD_CELEBRATE, S_MOOD_FOCUS, S_MOOD_LOWBAT, S_MOOD_SLEEP,
+    S_JOB, S_SKILL, S_FLOOR, S_LV, S_EXP, S_GOLD, S_HP, S_MP,
+    S_JOB_WANDERER, S_JOB_ARCHER, S_JOB_WHITE, S_JOB_BLACK,
+    S_JOB_DRAGON, S_JOB_SUMMONER, S_JOB_BLUE,
+    S_FOCUS, S_BREAK, S_START, S_PAUSE, S_RESUME, S_GIVE_UP,
+    S_FOCUS_DONE, S_GROWTH,
+    S_BOSS, S_WIN, S_CHEST, S_TRAP, S_REST, S_DOWN,
+    S_NG_PLUS, S_FAINT,
+    S_JOB_KNIGHT, S_JOB_THIEF, S_JOB_DARK,
+    S_SK_BASH, S_SK_TAUNT, S_SK_FIRE, S_SK_FROST,
+    S_SK_CURE, S_SK_AEGIS, S_SK_VENOM, S_SK_SMOKE,
+    S_SK_DRAIN, S_SK_DOOM,
+    S_TOWN_BARRACKS, S_TOWN_WORKSHOP, S_TOWN_INN,
+    S_ENERGY,
+    S_CH_AFFIX, S_CH_ATK, S_CH_LEARN, S_CH_DEF, S_CH_WOUND, S_CH_FEATHER,
+    S_PAIR, S_UPGRADE, S_REPORT, S_HOME, S_WISH, S_REBIRTH,
+    S_CH_SHRINE, S_CH_SHARDS, S_CH_CHALLENGE,
+    S_MODE_GAME, S_MODE_POMO, S_MODE_CLICKER, S_MODE_STANDBY, S_MODE_SWITCH,
+    S_AG_WORKING, S_AG_NEEDS, S_AG_REVIEW, S_AG_FAILED, S_AG_CELEBRATE,
+    // v10 autopilot town + card descriptions
+    S_AUTO, S_SYNTH, S_SANCTUM, S_SHOPPING, S_AUTO_PICK,
+    S_CHD_AFFIX, S_CHD_ATK, S_CHD_LEARN, S_CHD_DEF, S_CHD_WOUND, S_CHD_FEATHER,
+    S_CHD_SHRINE, S_CHD_SHARDS, S_CHD_CHALLENGE,
+    // settings page
+    S_SET_MUTE_ALL, S_SET_GAME_SND, S_SET_POMO_SND, S_SET_OTHER_SND, S_SET_HINT, S_LANG_NAME, S_SET_BGM_VOL, S_SET_SE_VOL,
+    S_BANNER_SMOKE, S_BANNER_CLEAR, S_SET_PAIR, S_PAIRING_NOW,
+    S_POMO_IDLE, S_POMO_RUN, S_POMO_PAUSE, S_POMO_REWARD, S_POMO_BREAK,
+    S_CLICKER_CONN, S_CLICKER_UNPAIR, S_CLICKER_HELP,
+    S_FAST_PLAY, S_MANUAL_TAKEOVER,
+    // v12.1 peddler: 4-state upgrade selector + consumable label
+    S_UPG_WPN, S_UPG_ARM, S_UPG_SMOKE, S_CONS_POT,
+    // v14 vocab mode: flashcard flow strings
+    S_MODE_VOCAB, S_VOCAB_FLIP, S_VOCAB_RATE, S_VOCAB_DONE, S_VOCAB_EXIT,
+    S_VOCAB_NEW, S_VOCAB_REVIEW, S_VOCAB_INTRO, S_VOCAB_EXTRA, S_VOCAB_CAP,
+    S_VOCAB_TOMORROW, S_VOCAB_REV_RECALL, S_VOCAB_REV_CHOICE,
+    S_VOCAB_REV_HINT, S_VOCAB_NEXT,
+    S_COUNT,
+} deskpet_str_id_t;
+
+const char *deskpet_tr(deskpet_str_id_t id, deskpet_lang_t lang);
+void deskpet_set_lang(deskpet_lang_t lang);
+deskpet_lang_t deskpet_get_lang(void);

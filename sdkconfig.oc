@@ -1,0 +1,5 @@
+# Family-private build overlay: pair with sdkconfig.defaults via
+#   idf.py -B build-oc -D SDKCONFIG=build-oc/sdkconfig \
+#     -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.oc" build
+# Requires the gitignored hero set under main/sprites/oc/.
+CONFIG_DESKPET_ART_FLAVOR_OC=y

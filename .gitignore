@@ -1,0 +1,18 @@
+# build & machine-local
+build*/
+sdkconfig
+sdkconfig.old
+managed_components/
+memory/
+.vscode/
+.idea/
+__pycache__/
+.DS_Store
+tools/__pycache__/
+tools/autotune_last_run.log
+tools/.font-cache/
+
+# OC 私有素材（family-private，永不入库；源在 moyu-playbook）
+main/sprites/oc/
+
+# 素材源与中间产物不在本仓（两仓规范 2026-09-09，见 moyu-playbook assets/）

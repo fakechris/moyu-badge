@@ -1,0 +1,22 @@
+menu "DeskPet art"
+
+choice DESKPET_ART_FLAVOR
+    prompt "Hero art flavor"
+    default DESKPET_ART_FLAVOR_GENERIC
+    help
+      Which hero art set is embedded into the firmware. Both flavors use the
+      same file stems, so game code is identical; only art differs.
+
+      generic: public-release chibi adventurers (main/sprites/generic/, in git).
+      oc:      family-private OC heroes (main/sprites/oc/, gitignored — the
+               files must exist locally and must never be published).
+
+config DESKPET_ART_FLAVOR_GENERIC
+    bool "generic (public release)"
+
+config DESKPET_ART_FLAVOR_OC
+    bool "oc (family private build)"
+
+endchoice
+
+endmenu
