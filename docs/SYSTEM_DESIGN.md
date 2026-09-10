@@ -13,6 +13,7 @@
 
 - 历史文档：moyu-playbook `docs/GAMEPLAY_V5.md`（v5→v10 的体系层，本文的母本）、
   `docs/COMBAT_V2.md`（V2 战斗设计）、`docs/DESIGN.md`（早期设计）——均已冻结，仅作考古。
+- 背单词过程 / 反向词组 / UI 状态机：moyu-playbook `docs/VOCAB.md`（§10 变更史里「§词汇子系统」的落点）。
 - 变更史：本文 §10；逐日决策与教训：moyu-playbook `DEVLOG.md`。
 
 ---
