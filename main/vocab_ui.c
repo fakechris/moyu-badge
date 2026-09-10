@@ -44,6 +44,14 @@ static bool s_initialized;
 static uint8_t s_menu_row;
 static uint8_t s_choice_answer;  // 0..2 button index of the right option
 
+// Phase-aware status line: the header leads with the CURRENT stage and shows
+// remaining work, so progress is readable instead of freezing on a stale
+// "新词 15/15" (user-reported).
+typedef enum { PK_REVIEW = 0, PK_NEW, PK_DRILL } phase_kind_t;
+static phase_kind_t s_cur_kind = PK_REVIEW;
+static int s_rev_total;          // due-review snapshot at session start
+static int s_rev_done;           // first-sight review cards rated this session
+
 // reverse session: snapshot of due reviews + session requeue ring
 static uint16_t s_rev_q[64];
 static uint16_t s_rev_n;
@@ -55,6 +63,7 @@ static uint8_t s_seen[64];       // bit per word: served this app run
 static void show_front(void);
 static void show_answer(void);
 static void show_menu(void);
+static void refresh_stats(void);
 static void rev_show_prompt(void);
 static void rev_show_answer(void);
 static void rev_show_choice(void);
@@ -218,11 +227,15 @@ static void show_menu(void)
     }
     set_fonts_cjk(true);
     lv_label_set_text(s_term_lbl, buf);
-    char fbuf[48];
-    snprintf(fbuf, sizeof(fbuf), "%s ~%d",
+    // ROOT-CAUSE FIX (overlap): rows + forecast + summary render as row flow
+    // inside ONE label. The old layout put the forecast in a second label at
+    // absolute y=100 — a 4-row menu is ~80px tall and always overran it.
+    snprintf(buf + off, sizeof(buf) - (size_t)off, "%s %d\n%s ~%d",
+             deskpet_tr(S_VOCAB_INTRO, deskpet_get_lang()),
+             vocab_introduced_words(),
              deskpet_tr(S_VOCAB_TOMORROW, deskpet_get_lang()),
              vocab_forecast_tomorrow());
-    lv_label_set_text(s_phon_lbl, fbuf);
+    lv_label_set_text(s_phon_lbl, "");
     lv_label_set_text(s_def_lbl, "");
     lv_obj_add_flag(s_def_lbl, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(s_hint_lbl, deskpet_tr(S_VOCAB_EXIT, deskpet_get_lang()));
@@ -230,14 +243,28 @@ static void show_menu(void)
 
 static void refresh_stats(void)
 {
-    char buf[96];
-    snprintf(buf, sizeof(buf), "%s %d/%d  %s %d  %s %d",
+    int rev_done = s_rev_done < s_rev_total ? s_rev_done : s_rev_total;
+    int rev_total = s_rev_total > s_rev_done ? s_rev_total : s_rev_done;
+    char rev[24], nu[24], drill[24];
+    snprintf(rev, sizeof(rev), "%s %d/%d",
+             deskpet_tr(S_VOCAB_REVIEW, deskpet_get_lang()), rev_done, rev_total);
+    snprintf(nu, sizeof(nu), "%s %d/%d",
              deskpet_tr(S_VOCAB_NEW, deskpet_get_lang()),
-             vocab_new_served_today(), vocab_new_daily_cap(),
-             deskpet_tr(S_VOCAB_INTRO, deskpet_get_lang()),
-             vocab_introduced_words(),
-             deskpet_tr(S_VOCAB_REVIEW, deskpet_get_lang()),
-             vocab_review_due_count());
+             vocab_new_served_today(), vocab_new_daily_cap());
+    drill[0] = 0;
+    if (s_rq_head != s_rq_tail)
+        snprintf(drill, sizeof(drill), "%s %d",
+                 deskpet_tr(S_VOCAB_REDRILL, deskpet_get_lang()),
+                 (int)((s_rq_tail - s_rq_head + RQ_MAX) % RQ_MAX));
+    char buf[96];   // current stage leads; every segment shows remaining work
+    if (s_cur_kind == PK_DRILL && drill[0])
+        snprintf(buf, sizeof(buf), "%s · %s · %s", drill, rev, nu);
+    else if (s_cur_kind == PK_NEW)
+        snprintf(buf, sizeof(buf), "%s · %s%s%s", nu, rev,
+                 drill[0] ? " · " : "", drill);
+    else
+        snprintf(buf, sizeof(buf), "%s · %s%s%s", rev, nu,
+                 drill[0] ? " · " : "", drill);
     lv_label_set_text(s_stat_lbl, buf);
 }
 
@@ -248,6 +275,7 @@ static void next_card(void)
         uint16_t drill;
         if (rq_pop(&drill)) {
             s_current = drill;
+            s_cur_kind = PK_DRILL;
             show_front();
             return;
         }
@@ -255,6 +283,7 @@ static void next_card(void)
         return;
     }
     s_current = (uint16_t)next;
+    s_cur_kind = (vocab_get_state((uint16_t)next)->reps == 0) ? PK_NEW : PK_REVIEW;
     show_front();
 }
 
@@ -364,6 +393,7 @@ void vocab_ui_button(int btn)
     uint16_t idx = s_current;
     bool first_sight = !seen_get(idx);
     seen_set(idx);
+    if (first_sight && s_cur_kind == PK_REVIEW) s_rev_done++;
     rate_commit(idx, btn == 0 ? VOCAB_AGAIN : (btn == 1 ? VOCAB_HARD : VOCAB_GOOD),
                 first_sight);
     if (btn == 0) rq_push(idx);             // 忘记: drill again this session
@@ -382,6 +412,9 @@ void vocab_ui_create(lv_obj_t *parent, const vocab_entry_t *entries, uint16_t co
 {
     vocab_init(entries, count);
     s_done_count = 0;
+    s_rev_total = vocab_review_due_count();
+    s_rev_done = 0;
+    s_cur_kind = vocab_review_due_count() ? PK_REVIEW : PK_NEW;
     s_rq_head = s_rq_tail = 0;
     s_rev_n = s_rev_i = 0;
     s_menu_row = 0;
