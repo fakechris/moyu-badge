@@ -278,7 +278,7 @@ uint16_t vocab_mastered_words(void) {
     return n;
 }
 
-uint16_t vocab_collect_due_reviews(uint16_t *out, uint16_t max)
+static uint16_t collect_ranked(uint16_t *out, uint16_t max, bool due_only)
 {
     float rs[64];                // parallel sort keys, max <= 64
     if (max > 64) max = 64;
@@ -286,7 +286,7 @@ uint16_t vocab_collect_due_reviews(uint16_t *out, uint16_t max)
     for (uint16_t i = 0; i < s_count; i++) {
         if (s_states[i].reps == 0) continue;
         float r = vocab_retrievability(i);
-        if (r >= FSRS_RETENTION) continue;
+        if (due_only && r >= FSRS_RETENTION) continue;
         if (n >= max) {          // full: keep only the worst-memories
             if (r >= rs[n - 1]) continue;
             n--;
@@ -302,6 +302,16 @@ uint16_t vocab_collect_due_reviews(uint16_t *out, uint16_t max)
         n++;
     }
     return n;
+}
+
+uint16_t vocab_collect_due_reviews(uint16_t *out, uint16_t max)
+{
+    return collect_ranked(out, max, true);
+}
+
+uint16_t vocab_collect_learned(uint16_t *out, uint16_t max)
+{
+    return collect_ranked(out, max, false);
 }
 
 uint16_t vocab_introduced_words(void) {

@@ -195,8 +195,30 @@ void test_forget_new_advances_and_counts_once(void) {
     int b = vocab_next_due();
     assert(b == 1);                           // next unseen new word, not restuck on 0
     assert(vocab_new_served_today() == 2);
-    assert(vocab_review_due_count() == 0);    // same-day R still high → reverse empty
+    assert(vocab_review_due_count() == 0);    // same-day R still high → due pool empty
+    uint16_t learned[8];
+    assert(vocab_collect_learned(learned, 8) == 1);  // reverse uses learned, not due
+    assert(learned[0] == (uint16_t)a);
     printf("  forget_new_advances_and_counts_once OK\n");
+}
+
+void test_collect_learned_vs_due(void) {
+    vocab_test_advance_days(1);
+    vocab_init(WORDS, 3);
+    uint16_t buf[8];
+    assert(vocab_collect_learned(buf, 8) == 0);      // nothing introduced
+    assert(vocab_collect_due_reviews(buf, 8) == 0);
+
+    int idx = vocab_next_due();
+    assert(idx >= 0);
+    vocab_review((uint16_t)idx, VOCAB_GOOD);
+    assert(vocab_collect_due_reviews(buf, 8) == 0);  // same-day R ≈ 1.0
+    assert(vocab_collect_learned(buf, 8) == 1);
+    assert(buf[0] == (uint16_t)idx);
+
+    vocab_review((uint16_t)vocab_next_due(), VOCAB_GOOD);
+    assert(vocab_collect_learned(buf, 8) == 2);
+    printf("  collect_learned_vs_due OK\n");
 }
 
 int main(void) {
@@ -206,6 +228,7 @@ int main(void) {
     test_fsrs_ordering();
     test_daily_budget();
     test_forget_new_advances_and_counts_once();
+    test_collect_learned_vs_due();
     printf("ALL VOCAB FSRS TESTS PASS\n");
     return 0;
 }

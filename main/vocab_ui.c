@@ -5,8 +5,8 @@
 //     back of today's queue until answered 模糊/认识; lapses on committed
 //     words record AGAIN immediately
 //   * post-quota MENU: 超额再背 / 每日新词数 / reverse sessions. Reverse
-//     practice is production training on already-known words only (Webb
-//     2005: vocabulary knowledge is direction-specific) in two flavors:
+//     practice is production training on the learned pool (reps>0), not the
+//     due-review subset (Webb 2005: knowledge is direction-specific), in two flavors:
 //     recall (see CN -> think EN -> flip -> self-rate) and 3-choice (CN ->
 //     pick EN among precomputed confusables — Little & Bjork 2016: only
 //     competitive distractors make MC ~= recall).
@@ -52,13 +52,15 @@ static phase_kind_t s_cur_kind = PK_REVIEW;
 static int s_rev_total;          // due-review snapshot at session start
 static int s_rev_done;           // first-sight review cards rated this session
 
-// reverse session: snapshot of due reviews + session requeue ring
+// reverse session: snapshot of learned words + session requeue ring
 static uint16_t s_rev_q[64];
 static uint16_t s_rev_n;
 static uint16_t s_rev_i;
 static uint16_t s_rq[RQ_MAX];
 static uint8_t s_rq_head, s_rq_tail;
 static uint8_t s_seen[64];       // bit per word: served this app run
+_Static_assert(VOCAB_MAX_WORDS <= (int)(sizeof(s_seen) * 8),
+               "s_seen bitmap smaller than VOCAB_MAX_WORDS");
 
 static void show_front(void);
 static void show_answer(void);
@@ -74,8 +76,11 @@ static inline void seen_set(uint16_t idx) { s_seen[idx >> 3] |= (uint8_t)(1u << 
 
 static void rq_push(uint16_t idx)
 {
+    for (uint8_t i = s_rq_head; i != s_rq_tail; i = (uint8_t)((i + 1) % RQ_MAX)) {
+        if (s_rq[i] == idx) return;          // already queued this session
+    }
     uint8_t next = (uint8_t)((s_rq_tail + 1) % RQ_MAX);
-    if (next == s_rq_head) return;
+    if (next == s_rq_head) return;           // full
     s_rq[s_rq_tail] = idx;
     s_rq_tail = next;
 }
@@ -163,7 +168,7 @@ static void rev_show_answer(void)
 static void rev_start(ui_state_t mode)
 {
     s_state = mode;
-    s_rev_n = vocab_collect_due_reviews(s_rev_q, 64);
+    s_rev_n = vocab_collect_learned(s_rev_q, 64);
     s_rev_i = 0;
     s_rq_head = s_rq_tail = 0;
     if (s_rev_n == 0) {
@@ -333,8 +338,20 @@ void vocab_ui_button(int btn)
                 refresh_stats();
                 return;
             }
-            if (s_menu_row == 1)            // cycle daily cap
+            if (s_menu_row == 1) {          // cycle daily cap
                 vocab_set_daily_cap(cap_cycle(vocab_new_daily_cap()));
+                // Raising the cap used to leave the user on the menu with
+                // leftover budget; they had to pick 超额再背 (fixed +10, not
+                // cap-linked). Resume study when today's serve is still
+                // under the new cap — lowering 30→5 stays on the menu.
+                if (vocab_new_served_today() < vocab_new_daily_cap()) {
+                    audio_se(CT_SE_OK);
+                    s_state = ST_STUDY;
+                    next_card();
+                    refresh_stats();
+                    return;
+                }
+            }
             else if (s_menu_row == 2) { audio_se(CT_SE_OK); rev_start(ST_REV_RECALL); return; }
             else { audio_se(CT_SE_OK); rev_start(ST_REV_CHOICE); return; }
         }
@@ -349,9 +366,11 @@ void vocab_ui_button(int btn)
             if (btn == 1) { audio_se(CT_SE_OK); rev_show_answer(); }
             return;
         }
-        bool first = !seen_get(idx);
         seen_set(idx);
-        rate_commit(idx, btn == 0 ? VOCAB_AGAIN : (btn == 1 ? VOCAB_HARD : VOCAB_GOOD), first);
+        // Production training is a real review: always commit, even if the
+        // same stem was already rated in today's forward pass. Otherwise a
+        // reverse miss leaves no FSRS trace (s_seen is shared with study).
+        rate_commit(idx, btn == 0 ? VOCAB_AGAIN : (btn == 1 ? VOCAB_HARD : VOCAB_GOOD), true);
         if (btn == 0) rq_push(idx);
         audio_se(CT_SE_OK);
         s_done_count++;
@@ -363,10 +382,9 @@ void vocab_ui_button(int btn)
 
     if (s_state == ST_REV_CHOICE) {
         uint16_t idx = s_current;
-        bool first = !seen_get(idx);
         seen_set(idx);
         bool right = ((uint8_t)btn == s_choice_answer);
-        rate_commit(idx, right ? VOCAB_GOOD : VOCAB_AGAIN, first);
+        rate_commit(idx, right ? VOCAB_GOOD : VOCAB_AGAIN, true);
         if (!right) rq_push(idx);
         audio_se(CT_SE_OK);
         s_done_count++;
