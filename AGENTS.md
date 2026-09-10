@@ -4,7 +4,7 @@
 研究、方法论、制作管线、中间素材一律在 **`../moyu-playbook`**。
 判定口诀：**「发版本需要它吗？」不是 → playbook。**
 
-本地工作原则（循环、跨仓命令）在 gitignored 的 `memory/AGENTS.md`。
+本文件是进仓铁律。循环操作手册在 gitignored 的 `memory/AGENTS.md`，不得与本节冲突。
 
 ## 本仓允许的内容
 
@@ -35,26 +35,29 @@ OC 固件目录 `main/sprites/oc/` 与 `sdkconfig.oc` 均 gitignore；OC 构建 
 - 固件构建：`PATH="$HOME/.espressif/python_env/idf5.5_py3.14_env/bin:$PATH"` 先于
   `source ~/esp/esp-idf-v5.5.3/export.sh`。
 
-## 分支梯队（循环每轮都提交，但你只 merge rc）
+## 分支梯队（必须遵守）
 
-循环在 `../moyu-badge-autogoal`。**每轮都在 `autogoal` 上提交**——这是草稿区，
-中间结果和半成品都可能在这里，下一轮可以自己回滚。不要把「每轮提交」理解成
-每轮都能进 `main`。
+循环在 `../moyu-badge-autogoal`，**每轮都提交**——但提交目标是草稿分支，不是 `main`。
 
-| 分支 | 定位 | 谁动 |
-|---|---|---|
-| `autogoal` | 工作草稿。每轮提交，可回滚 | 循环 |
-| `autogoal-rc` | 候选发布线。只有晋升的提交 | 循环按条款推进 |
-| `main` | 发版线 | **只 `git merge autogoal-rc`**；禁止 merge `autogoal` |
+| 分支 | 定位 | 谁写 | 谁读 |
+|---|---|---|---|
+| `autogoal` | 草稿区。每轮提交；半成品、中间结果、下一轮可回滚 | **只循环**（该 worktree） | 禁止 merge 进 `main` |
+| `autogoal-rc` | 候选发布线。只有按条款晋升的提交 | 循环在满足 §5.3 时快进/推进 | **`main` 唯一允许的合入源** |
+| `main` | 发版线 | 操作者：`git merge autogoal-rc`；以及本仓发版必需的热修/美术成品 | 刷机、发布 |
 
-晋升条款写在 playbook `docs/OPTIMIZATION_GOAL.md` **§5.3**（不是循环的记忆）。必须全部满足：
+**禁止：**
 
-1. 该提交自身全套件绿；触及 `main/` 固件的轮次还要同轮 `idf.py build` 绿。
+- `git merge autogoal`（合草稿）。永远只 `git merge autogoal-rc`。
+- 在主检出上直接提交循环式玩法/数值实验。那类工作只许在 autogoal worktree 的 `autogoal` 分支上进行。
+- 循环写入 `main`、切换到 `main`、或碰串口 / `erase-flash` / `cardid` / `recovery`。
+
+晋升条款是书面合同，不是循环记忆：playbook `docs/OPTIMIZATION_GOAL.md` **§5.3**。全部满足才准动 `autogoal-rc`：
+
+1. 该提交自身全套件绿；触及 `main/` 固件的轮次还要**同轮** `idf.py build` 绿。
 2. **浸润**：固件杠杆必须在其后一轮复测仍达标、门仍绿（至少测两轮）。纯 tools/docs 可当轮晋升。
 3. 杠杆完整，非半成品，无已知未决回归。
 4. 写入 `docs/RELEASE_CANDIDATES.md`（commit、杠杆、指标增量、约 5 分钟真机核对清单、回滚指针），并打 tag `autogoal-rc-N`。
 
-循环验证不了真机手感。它只负责把过了客观门槛 + 浸润的提交递到 rc 线，并附刷机前清单。
-刷机由本仓操作者执行；循环无串口权限。`cardid` / `recovery` 永不写入，禁 `erase-flash`。
+循环验证不了真机手感。它只把过了客观门槛 + 浸润的提交递到 rc，并附刷机前清单。刷机由本仓操作者做。
 
 产品工作图在 Involute **INV-65**。本仓不另建 TODO 清单。
