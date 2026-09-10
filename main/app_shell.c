@@ -115,8 +115,8 @@ static void switcher_refresh(void)
     lv_obj_set_style_text_font(s_sw_list, f, 0);
     lv_obj_set_style_text_font(s_sw_scr, f, 0);
     static const sprite_id_t POSE[APP_MODE_COUNT] = {
-        SPR_FRONT_KNIGHT, SPR_OC_POMO_FOCUS, SPR_OC_CLICKER, SPR_AG_REVIEW,
-        SPR_OC_STANDBY_SLEEP, SPR_FRONT_KNIGHT,
+        SPR_FRONT_KNIGHT, SPR_OC_POMO_FOCUS, SPR_OC_CLICKER, SPR_OC_VOCAB_STUDY,
+        SPR_OC_STANDBY_SLEEP, SPR_OC_SETTINGS,
     };
     const lv_img_dsc_t *oc = sprite_get(POSE[s_sw_cursor]);
     if (oc) lv_img_set_src(s_sw_oc, oc);
@@ -159,7 +159,9 @@ static void switcher_open(void)
     if (oc) lv_img_set_src(s_sw_oc, oc);
     lv_image_set_antialias(s_sw_oc, false);
     lv_img_set_zoom(s_sw_oc, 512);
-    lv_obj_set_pos(s_sw_oc, 144, 220);
+    // Menu poses are 64x64 at 2x zoom. Keep the full 128x128 image inside the
+    // 240x320 viewport so props and feet are not clipped on the right/bottom.
+    lv_obj_set_pos(s_sw_oc, 112, 192);
     s_mode = APP_MODE_SWITCHER;
     lv_screen_load(s_sw_scr);
     switcher_refresh();

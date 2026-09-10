@@ -100,6 +100,28 @@ def main() -> None:
                 f"{flavor}/{name}: bad SP4 pack size"
             )
 
+    # The six switcher rows need distinct, semantically dedicated artwork.
+    # In particular, the former Pomodoro reading pose belongs to Vocab and the
+    # tiny agent-review face must never return to this 64px menu slot.
+    shell = (ROOT / "main" / "app_shell.c").read_text()
+    pose_match = re.search(
+        r'POSE\[APP_MODE_COUNT\]\s*=\s*\{([^}]+)\}', shell, re.S
+    )
+    assert pose_match, "mode switcher POSE table missing"
+    menu_poses = re.findall(r'SPR_[A-Z0-9_]+', pose_match.group(1))
+    expected_menu_poses = [
+        "SPR_FRONT_KNIGHT",
+        "SPR_OC_POMO_FOCUS",
+        "SPR_OC_CLICKER",
+        "SPR_OC_VOCAB_STUDY",
+        "SPR_OC_STANDBY_SLEEP",
+        "SPR_OC_SETTINGS",
+    ]
+    assert menu_poses == expected_menu_poses, (
+        f"mode switcher art mapping drifted: {menu_poses}"
+    )
+    assert len(set(menu_poses)) == len(menu_poses), "mode switcher repeats artwork"
+
     print(f"ALL STATIC ASSET FORMATS PASS ({len(entries)} sprites)")
 
 

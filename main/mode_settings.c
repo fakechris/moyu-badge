@@ -82,7 +82,7 @@ void mode_settings_enter(void)
     s_hint = lv_label_create(s_scr);
     lv_obj_set_pos(s_hint, 16, 216);
     s_oc = lv_img_create(s_scr);
-    const lv_img_dsc_t *oc = sprite_get(SPR_FRONT_KNIGHT);
+    const lv_img_dsc_t *oc = sprite_get(SPR_OC_SETTINGS);
     if (oc) lv_img_set_src(s_oc, oc);
     lv_image_set_antialias(s_oc, false);
     lv_img_set_zoom(s_oc, 256);

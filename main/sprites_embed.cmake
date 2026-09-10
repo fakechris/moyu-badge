@@ -76,7 +76,9 @@ set(DESKPET_SPRITES_OC
     sprites/oc/oc_clicker.argb8888
     sprites/oc/oc_pomo_focus.argb8888
     sprites/oc/oc_pomo_reward.argb8888
+    sprites/oc/oc_settings.argb8888
     sprites/oc/oc_standby_sleep.argb8888
+    sprites/oc/oc_vocab_study.argb8888
     sprites/oc/side_black.argb8888
     sprites/oc/side_dark.argb8888
     sprites/oc/side_knight.argb8888
@@ -108,7 +110,9 @@ set(DESKPET_SPRITES_GENERIC
     sprites/generic/oc_clicker.argb8888
     sprites/generic/oc_pomo_focus.argb8888
     sprites/generic/oc_pomo_reward.argb8888
+    sprites/generic/oc_settings.argb8888
     sprites/generic/oc_standby_sleep.argb8888
+    sprites/generic/oc_vocab_study.argb8888
     sprites/generic/side_black.argb8888
     sprites/generic/side_dark.argb8888
     sprites/generic/side_knight.argb8888

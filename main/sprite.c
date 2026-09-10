@@ -30,7 +30,9 @@ static const spr_def_t DEFS[SPR_COUNT] = {
     [SPR_OC_POMO_FOCUS] = A888("oc_pomo_focus", 64, 64),
     [SPR_OC_POMO_REWARD] = A888("oc_pomo_reward", 64, 64),
     [SPR_OC_CLICKER] = A888("oc_clicker", 64, 64),
+    [SPR_OC_VOCAB_STUDY] = A888("oc_vocab_study", 64, 64),
     [SPR_OC_STANDBY_SLEEP] = A888("oc_standby_sleep", 64, 64),
+    [SPR_OC_SETTINGS] = A888("oc_settings", 64, 64),
     [SPR_SIDE_KNIGHT] = A888("side_knight", 64, 64),
     [SPR_SIDE_BLACK] = A888("side_black", 64, 64),
     [SPR_SIDE_WHITE] = A888("side_white", 64, 64),
@@ -97,7 +99,8 @@ DECL(ag_working, argb8888) DECL(ag_needs0, argb8888) DECL(ag_needs1, argb8888)
 DECL(ag_review, argb8888) DECL(ag_failed, argb8888) DECL(ag_celebrate, argb8888)
 DECL(hero_job_white, argb8888) DECL(hero_job_black, argb8888)
 DECL(oc_pomo_focus, argb8888) DECL(oc_pomo_reward, argb8888)
-DECL(oc_clicker, argb8888) DECL(oc_standby_sleep, argb8888)
+DECL(oc_clicker, argb8888) DECL(oc_vocab_study, argb8888)
+DECL(oc_standby_sleep, argb8888) DECL(oc_settings, argb8888)
 DECL(side_knight, argb8888) DECL(side_black, argb8888) DECL(side_white, argb8888)
 DECL(side_thief, argb8888) DECL(side_dark, argb8888)
 DECL(front_knight, argb8888) DECL(front_thief, argb8888) DECL(front_dark, argb8888)
@@ -143,7 +146,9 @@ static const uint8_t *spr_ptr(sprite_id_t id)
     case SPR_OC_POMO_FOCUS: return PTR(oc_pomo_focus, argb8888);
     case SPR_OC_POMO_REWARD: return PTR(oc_pomo_reward, argb8888);
     case SPR_OC_CLICKER: return PTR(oc_clicker, argb8888);
+    case SPR_OC_VOCAB_STUDY: return PTR(oc_vocab_study, argb8888);
     case SPR_OC_STANDBY_SLEEP: return PTR(oc_standby_sleep, argb8888);
+    case SPR_OC_SETTINGS: return PTR(oc_settings, argb8888);
     case SPR_SIDE_KNIGHT: return PTR(side_knight, argb8888);
     case SPR_SIDE_BLACK: return PTR(side_black, argb8888);
     case SPR_SIDE_WHITE: return PTR(side_white, argb8888);
