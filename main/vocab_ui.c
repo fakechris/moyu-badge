@@ -52,7 +52,8 @@ static phase_kind_t s_cur_kind = PK_REVIEW;
 static int s_rev_total;          // due-review snapshot at session start
 static int s_rev_done;           // first-sight review cards rated this session
 
-// reverse session: snapshot of learned words + session requeue ring
+// reverse session: ranked learned snapshot; UI windows VOCAB_REV_BATCH
+// via s_rev_cursor. Does not drain the forward drill ring.
 static uint16_t s_rev_q[64];
 static uint16_t s_rev_n;
 static uint16_t s_rev_i;
@@ -319,9 +320,9 @@ static uint16_t cap_cycle(uint16_t cap)
 }
 
 // commit rules for a rating on word idx:
-//   模糊/认识: first real appearance always; a requeued NEW word on its
-//   graduating pass; requeued committed words are pure drill (lapse already
-//   recorded). 忘记: lapse commits immediately on committed words.
+//   first sight (or still-new reps==0): always write. 忘记 on first sight
+//   also writes, so the stem enters learning. Requeue is drill-only:
+//   first_sight is false and reps>=1, so HARD/GOOD do not "graduate".
 static void rate_commit(uint16_t idx, vocab_rating_t rating, bool first_sight)
 {
     uint8_t reps = vocab_get_state(idx)->reps;

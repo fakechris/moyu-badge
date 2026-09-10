@@ -105,8 +105,8 @@ uint16_t vocab_forecast_tomorrow(void);
 uint16_t vocab_collect_due_reviews(uint16_t *out, uint16_t max);
 // Snapshot of every introduced word (reps>0), lowest retrievability first.
 // Reverse-practice trains production on the learned pool, not the due-review
-// subset — same-day R is ~1.0, so a due-only pool is empty after today's
-// new words. Caps at `max` (UI passes VOCAB_REV_BATCH). Returns count.
+// subset — same-day R is 1.0, so a due-only pool is empty after today's
+// new words. Caps at `max` (UI collects 64 then windows VOCAB_REV_BATCH).
 uint16_t vocab_collect_learned(uint16_t *out, uint16_t max);
 
 #endif // VOCAB_MODEL_H
