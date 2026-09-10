@@ -8,13 +8,17 @@ Rules (all must hold, else HOST GATES fails):
   3. Every gate named in the doc's §8 map exists as a section/print in
      balance_sim.c or benchmark.c or tests/ (light check by keyword).
 """
+import os
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 # two-repo split: sim/benchmark sources live in the playbook repo
-PLAYBOOK = Path(__file__).resolve().parent.parent.parent / "moyu-playbook"
+PLAYBOOK = Path(os.environ.get(
+    "REPO_PLAYBOOK",
+    Path(__file__).resolve().parent.parent.parent / "moyu-playbook",
+))
 if not PLAYBOOK.exists():
     PLAYBOOK = ROOT  # fallback: legacy single-repo layout
 DOC = ROOT / "docs" / "SYSTEM_DESIGN.md"
