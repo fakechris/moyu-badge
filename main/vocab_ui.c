@@ -56,6 +56,7 @@ static int s_rev_done;           // first-sight review cards rated this session
 static uint16_t s_rev_q[64];
 static uint16_t s_rev_n;
 static uint16_t s_rev_i;
+static uint16_t s_rev_cursor; // next reverse window into the learned pool
 static uint16_t s_rq[RQ_MAX];
 static uint8_t s_rq_head, s_rq_tail;
 static uint8_t s_seen[64];       // bit per word: served this app run
@@ -129,12 +130,7 @@ static bool rev_next(void)
         s_current = s_rev_q[s_rev_i++];
         return true;
     }
-    uint16_t drill;
-    if (rq_pop(&drill)) {
-        s_current = drill;
-        return true;
-    }
-    return false;
+    return false;                // reverse is snapshot-only; never drain s_rq
 }
 
 static void rev_show_prompt(void)
@@ -168,15 +164,22 @@ static void rev_show_answer(void)
 static void rev_start(ui_state_t mode)
 {
     s_state = mode;
-    s_rev_n = vocab_collect_learned(s_rev_q, VOCAB_REV_BATCH);
+    uint16_t nall = vocab_collect_learned(s_rev_q, 64);
     s_rev_i = 0;
-    s_rq_head = s_rq_tail = 0;
-    if (s_rev_n == 0) {
+    if (nall == 0) {
         audio_se(CT_SE_WARN);
         show_menu();
         lv_label_set_text(s_hint_lbl, deskpet_tr(S_VOCAB_REV_EMPTY, deskpet_get_lang()));
         return;
     }
+    if (s_rev_cursor >= nall) s_rev_cursor = 0;
+    uint16_t take = nall < VOCAB_REV_BATCH ? nall : VOCAB_REV_BATCH;
+    uint16_t window[VOCAB_REV_BATCH];
+    for (uint16_t i = 0; i < take; i++)
+        window[i] = s_rev_q[(s_rev_cursor + i) % nall];
+    memcpy(s_rev_q, window, take * sizeof(uint16_t));
+    s_rev_n = take;
+    s_rev_cursor = (uint16_t)((s_rev_cursor + take) % nall);
     rev_next();
     if (s_state == ST_REV_RECALL) rev_show_prompt();
     else rev_show_choice();
@@ -244,6 +247,7 @@ static void show_menu(void)
     lv_label_set_text(s_def_lbl, "");
     lv_obj_add_flag(s_def_lbl, LV_OBJ_FLAG_HIDDEN);
     lv_label_set_text(s_hint_lbl, deskpet_tr(S_VOCAB_EXIT, deskpet_get_lang()));
+    refresh_stats();             // drop leftover「反向 10/10」after a session
 }
 
 static void refresh_stats(void)
@@ -458,6 +462,7 @@ void vocab_ui_create(lv_obj_t *parent, const vocab_entry_t *entries, uint16_t co
     s_cur_kind = vocab_review_due_count() ? PK_REVIEW : PK_NEW;
     s_rq_head = s_rq_tail = 0;
     s_rev_n = s_rev_i = 0;
+    s_rev_cursor = 0;
     s_menu_row = 0;
     memset(s_seen, 0, sizeof(s_seen));
     s_state = ST_STUDY;
