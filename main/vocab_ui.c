@@ -336,6 +336,17 @@ static void rate_commit(uint16_t idx, vocab_rating_t rating, bool first_sight)
     if (first_sight || reps == 0) vocab_review(idx, rating);
 }
 
+// Reverse: miss always lapses. Success writes only if this run has not
+// already rated the stem (no same-day double promote). 3-choice hits are
+// capped at HARD — cued recognition is not uncued recall.
+static void rev_rate(uint16_t idx, vocab_rating_t rating)
+{
+    bool already = seen_get(idx);
+    seen_set(idx);
+    if (rating == VOCAB_AGAIN || !already)
+        rate_commit(idx, rating, true);
+}
+
 // btn: 0=忘记(UP) 1=模糊/confirm(OK) 2=认识/pick(DOWN)
 void vocab_ui_button(int btn)
 {
@@ -381,11 +392,7 @@ void vocab_ui_button(int btn)
             if (btn == 1) { audio_se(CT_SE_OK); rev_show_answer(); }
             return;
         }
-        seen_set(idx);
-        // Production training is a real review: always commit, even if the
-        // same stem was already rated in today's forward pass. Otherwise a
-        // reverse miss leaves no FSRS trace (s_seen is shared with study).
-        rate_commit(idx, btn == 0 ? VOCAB_AGAIN : (btn == 1 ? VOCAB_HARD : VOCAB_GOOD), true);
+        rev_rate(idx, btn == 0 ? VOCAB_AGAIN : (btn == 1 ? VOCAB_HARD : VOCAB_GOOD));
         // One pass: 忘记 still lapses FSRS, but does not requeue. Reverse
         // used the forward drill ring and never drained (device: 没完没了).
         audio_se(CT_SE_OK);
@@ -401,9 +408,8 @@ void vocab_ui_button(int btn)
 
     if (s_state == ST_REV_CHOICE) {
         uint16_t idx = s_current;
-        seen_set(idx);
         bool right = ((uint8_t)btn == s_choice_answer);
-        rate_commit(idx, right ? VOCAB_GOOD : VOCAB_AGAIN, true);
+        rev_rate(idx, right ? VOCAB_HARD : VOCAB_AGAIN);
         audio_se(CT_SE_OK);
         s_done_count++;
         refresh_stats();

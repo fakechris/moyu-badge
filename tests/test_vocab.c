@@ -109,6 +109,23 @@ void test_fsrs_ordering(void) {
     printf("  fsrs_ordering OK\n");
 }
 
+void test_second_hard_grows_less_than_good(void) {
+    // Reverse 3-choice caps a hit at HARD so a second same-day review
+    // must not inflate S as much as a second GOOD.
+    vocab_init(WORDS, 3);
+    vocab_review(0, VOCAB_GOOD);
+    float s0 = vocab_get_state(0)->stability;
+    vocab_review(0, VOCAB_GOOD);
+    float s_gg = vocab_get_state(0)->stability;
+    vocab_init(WORDS, 3);
+    vocab_review(0, VOCAB_GOOD);
+    vocab_review(0, VOCAB_HARD);
+    float s_gh = vocab_get_state(0)->stability;
+    assert(s_gh > s0);
+    assert(s_gh < s_gg);
+    printf("  second_hard_grows_less_than_good OK\n");
+}
+
 void test_daily_budget(void) {
     // budget survives vocab_init on purpose (mode re-entry must not refill);
     // land on a fresh day so earlier tests' consumption doesn't leak in.
@@ -256,6 +273,7 @@ int main(void) {
     test_fsrs_retrievability();
     test_fsrs_difficulty_adapts();
     test_fsrs_ordering();
+    test_second_hard_grows_less_than_good();
     test_daily_budget();
     test_forget_new_advances_and_counts_once();
     test_collect_learned_vs_due();
