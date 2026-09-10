@@ -170,12 +170,42 @@ void test_daily_budget(void) {
     printf("  daily_budget OK\n");
 }
 
+void test_forget_new_advances_and_counts_once(void) {
+    // User report: 忘记 on a new word restuck that stem and 新词 N/cap climbed.
+    vocab_test_advance_days(1);
+    static char terms[5][16], phons[5][16], defs[5][16];
+    vocab_entry_t many[5];
+    for (int i = 0; i < 5; i++) {
+        snprintf(terms[i], sizeof(terms[i]), "n%d", i);
+        snprintf(phons[i], sizeof(phons[i]), "/n%d/", i);
+        snprintf(defs[i], sizeof(defs[i]), "d%d", i);
+        many[i].term = terms[i];
+        many[i].phonetic = phons[i];
+        many[i].definition = defs[i];
+        many[i].distractors[0] = (uint8_t)((i + 1) % 5);
+        many[i].distractors[1] = (uint8_t)((i + 2) % 5);
+    }
+    vocab_init(many, 5);
+    vocab_set_daily_cap(5);
+    int a = vocab_next_due();
+    assert(a == 0);
+    assert(vocab_new_served_today() == 1);
+    vocab_review((uint16_t)a, VOCAB_AGAIN);   // UI now commits AGAIN on new words
+    assert(vocab_get_state((uint16_t)a)->reps == 1);
+    int b = vocab_next_due();
+    assert(b == 1);                           // next unseen new word, not restuck on 0
+    assert(vocab_new_served_today() == 2);
+    assert(vocab_review_due_count() == 0);    // same-day R still high → reverse empty
+    printf("  forget_new_advances_and_counts_once OK\n");
+}
+
 int main(void) {
     test_fsrs_basic();
     test_fsrs_retrievability();
     test_fsrs_difficulty_adapts();
     test_fsrs_ordering();
     test_daily_budget();
+    test_forget_new_advances_and_counts_once();
     printf("ALL VOCAB FSRS TESTS PASS\n");
     return 0;
 }

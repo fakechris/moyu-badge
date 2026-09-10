@@ -167,7 +167,9 @@ static void rev_start(ui_state_t mode)
     s_rev_i = 0;
     s_rq_head = s_rq_tail = 0;
     if (s_rev_n == 0) {
+        audio_se(CT_SE_WARN);
         show_menu();
+        lv_label_set_text(s_hint_lbl, deskpet_tr(S_VOCAB_REV_EMPTY, deskpet_get_lang()));
         return;
     }
     rev_next();
@@ -225,16 +227,13 @@ static void show_menu(void)
         off += snprintf(buf + off, sizeof(buf) - (size_t)off, "%c %s\n",
                         r == s_menu_row ? '>' : ' ', txt);
     }
+    off += snprintf(buf + off, sizeof(buf) - (size_t)off, "%s %d\n%s ~%d",
+                    deskpet_tr(S_VOCAB_INTRO, deskpet_get_lang()),
+                    vocab_introduced_words(),
+                    deskpet_tr(S_VOCAB_TOMORROW, deskpet_get_lang()),
+                    vocab_forecast_tomorrow());
     set_fonts_cjk(true);
     lv_label_set_text(s_term_lbl, buf);
-    // ROOT-CAUSE FIX (overlap): rows + forecast + summary render as row flow
-    // inside ONE label. The old layout put the forecast in a second label at
-    // absolute y=100 — a 4-row menu is ~80px tall and always overran it.
-    snprintf(buf + off, sizeof(buf) - (size_t)off, "%s %d\n%s ~%d",
-             deskpet_tr(S_VOCAB_INTRO, deskpet_get_lang()),
-             vocab_introduced_words(),
-             deskpet_tr(S_VOCAB_TOMORROW, deskpet_get_lang()),
-             vocab_forecast_tomorrow());
     lv_label_set_text(s_phon_lbl, "");
     lv_label_set_text(s_def_lbl, "");
     lv_obj_add_flag(s_def_lbl, LV_OBJ_FLAG_HIDDEN);
@@ -308,7 +307,10 @@ static void rate_commit(uint16_t idx, vocab_rating_t rating, bool first_sight)
 {
     uint8_t reps = vocab_get_state(idx)->reps;
     if (rating == VOCAB_AGAIN) {
-        if (first_sight && reps > 0) vocab_review(idx, VOCAB_AGAIN);
+        // First sight: commit AGAIN even for new words so they enter
+        // learning (reps>0). Otherwise next_new_word() keeps returning the
+        // same stem and increments today's new-word counter every pass.
+        if (first_sight) vocab_review(idx, VOCAB_AGAIN);
         return;
     }
     if (first_sight || reps == 0) vocab_review(idx, rating);
