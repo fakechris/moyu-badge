@@ -13,7 +13,7 @@
 | `tests/` + `sim/` | 固件回归门（host 可跑）；sim 自包含 vendored LVGL |
 | `sender/` | agent 状态 BLE 推送客户端 |
 | `tools/` | 仅发布工具：`validate-host.sh`、`flash.sh`、`product_check.sh`、`budget.py`、`check_design_doc.py`、`gen_build_time.cmake` |
-| `docs/` | 仅 `SYSTEM_DESIGN.md`（TUN 门禁目标）+ `RELEASE_CANDIDATES.md`（晋升台账） |
+| `docs/` | `SYSTEM_DESIGN.md`、`RELEASE_CANDIDATES.md`、`docs/screenshots/`（README 实机图） |
 
 ## 本仓禁止的内容
 
