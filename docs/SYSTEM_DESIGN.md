@@ -1,21 +1,14 @@
 # SYSTEM_DESIGN —— DeskPet 玩法系统设计正本（model version 13 / v16）
 
-> 两仓规范（2026-09-09）：本仓只存发版必须的代码/打包素材/发布门；指标体系、迭代日志、
-> 优化协议、研究工具在 **moyu-playbook** 仓（docs/ 与 tools/）。
-
 > **本文档是唯一的系统设计正本（design of record）。**
 > 代码是法律的条文，本文档是法律的体系；两者不一致时，以先修好两者为准，不许只改一边。
-> 方法论与历史沉淀在 moyu-playbook 仓库；本文只回答一个问题：**这个游戏作为系统是怎么环环相扣运转的。**
+> 本文只回答一个问题：**这个游戏作为系统是怎么环环相扣运转的。**
 >
 > 配套门禁：`tools/check_design_doc.py`（进 validate-host）——
 > 每个调参旋钮（TUN_*）必须在本文件 §9 参数总表登记，模型版本号必须与代码一致，
 > 否则 HOST GATES 直接失败。**改代码不改文档 = 门红。**
 
-- 游戏需求+概览（发散）：moyu-playbook `docs/GAME_BRIEF.md`；可读 as-built：`docs/GAME.md`。
-- 历史文档：moyu-playbook `docs/GAMEPLAY_V5.md`（v5→v10 的体系层，本文的母本）、
-  `docs/COMBAT_V2.md`（V2 战斗设计）、`docs/DESIGN.md`（早期设计）——均已冻结，仅作考古。
-- 背单词需求+概览：moyu-playbook `docs/VOCAB_BRIEF.md`；详细机制：`docs/VOCAB.md`（§10「§词汇子系统」的落点）。
-- 变更史：本文 §10；逐日决策与教训：moyu-playbook `DEVLOG.md`。
+- 变更史：本文 §10。
 
 ---
 

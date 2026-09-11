@@ -1,8 +1,7 @@
 # AGENTS.md —— moyu-badge 仓库契约（发版仓）
 
 本仓 = **发版仓**：只放发版本必须的东西。
-研究、方法论、制作管线、中间素材一律在 **`../moyu-playbook`**。
-判定口诀：**「发版本需要它吗？」不是 → playbook。**
+判定口诀：**「发版本需要它吗？」不是 → 不要放进本仓。**
 
 本文件是进仓铁律。循环操作手册在 gitignored 的 `memory/AGENTS.md`，不得与本节冲突。
 
@@ -16,24 +15,16 @@
 | `tools/` | 仅发布工具：`validate-host.sh`、`flash.sh`、`product_check.sh`、`budget.py`、`check_design_doc.py`、`gen_build_time.cmake` |
 | `docs/` | 仅 `SYSTEM_DESIGN.md`（TUN 门禁目标）+ `RELEASE_CANDIDATES.md`（晋升台账） |
 
-`import_anki.py`、`gen_zh_subset.py`、`pack_static_assets.py`、`pixelpost.py`、`benchmark.c`、`balance_sim.c` 都在 playbook `tools/`。
-
 ## 本仓禁止的内容
 
-研究文档、迭代日志、指标体系、scorecard / autotune / diag_*、素材制作管线、
-**任何中间素材**（raw / review / trial / motion-v2）、OC 私有源图。
-OC 固件目录 `main/sprites/oc/` 与 `sdkconfig.oc` 均 gitignore；OC 构建 overlay 在 playbook。
+研究文档、迭代日志、指标体系、autotune、素材制作管线、
+**任何中间素材**、未公开发布的私有立绘。
+`main/sprites/oc/` 与 `sdkconfig.oc` 均 gitignore，不得入库。
 
-## 跨仓约定（改这些文件前必读）
+## 构建
 
-- `REPO_PLAYBOOK` 默认 `../moyu-playbook`。`validate-host.sh` 的 balance 门和
-  `check_design_doc.py` 从 playbook `tools/` 读 `balance_sim.c` / `benchmark.c`。
-- `tests/test_asset_packing.py` 经 `DESKPET_ROOT`（badge 根）读 playbook 的 `hero_flavors.py`。
-- playbook `scorecard.py` 用 `BADGE_DIR` 指回本仓任一检出。
-- 从预览重打包精灵：在 playbook 跑
-  `DESKPET_ROOT=<本仓> python3 tools/pack_static_assets.py`。
-- 固件构建：`PATH="$HOME/.espressif/python_env/idf5.5_py3.14_env/bin:$PATH"` 先于
-  `source ~/esp/esp-idf-v5.5.3/export.sh`。
+固件构建：`PATH="$HOME/.espressif/python_env/idf5.5_py3.14_env/bin:$PATH"` 先于
+`source ~/esp/esp-idf-v5.5.3/export.sh`。BSP 默认 `../my-ai-passport/ai-passport/components`。
 
 ## 分支梯队（必须遵守）
 
@@ -51,7 +42,7 @@ OC 固件目录 `main/sprites/oc/` 与 `sdkconfig.oc` 均 gitignore；OC 构建 
 - 在主检出上直接提交循环式玩法/数值实验。那类工作只许在 autogoal worktree 的 `autogoal` 分支上进行。
 - 循环写入 `main`、切换到 `main`、或碰串口 / `erase-flash` / `cardid` / `recovery`。
 
-晋升条款是书面合同，不是循环记忆：playbook `docs/OPTIMIZATION_GOAL.md` **§5.3**。全部满足才准动 `autogoal-rc`：
+晋升条款是书面合同，不是循环记忆。全部满足才准动 `autogoal-rc`：
 
 1. 该提交自身全套件绿；触及 `main/` 固件的轮次还要**同轮** `idf.py build` 绿。
 2. **浸润**：固件杠杆必须在其后一轮复测仍达标、门仍绿（至少测两轮）。纯 tools/docs 可当轮晋升。

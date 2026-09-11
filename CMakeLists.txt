@@ -10,4 +10,12 @@ endif()
 list(APPEND EXTRA_COMPONENT_DIRS "${DESKPET_BSP_DIR}")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+
+# Keep the factory Recovery entry gesture so community USB installs stay
+# recoverable via the device's permanent Recovery image.
+idf_build_set_property(
+    BOOTLOADER_EXTRA_COMPONENT_DIRS
+    "${CMAKE_CURRENT_LIST_DIR}/bootloader_components/"
+    APPEND)
+
 project(deskpet-game)

@@ -2,7 +2,7 @@
 
 > merge 规则（与根 `AGENTS.md` 相同）：主检出永远只 `git merge autogoal-rc`。
 > 不要 merge `autogoal`——那是工作草稿，每轮都在变，含未浸润的中间结果。
-> 晋升标准：`../moyu-playbook/docs/OPTIMIZATION_GOAL.md` **§5.3**（书面条款，不是循环记忆）。
+> 晋升标准：书面条款，不是循环记忆。
 > 循环无法验证真机手感，每次晋升附真机核对清单，用户过一遍（~5 分钟）再刷机。
 
 ## autogoal-rc-1 (当前分支尖)

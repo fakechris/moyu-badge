@@ -12,9 +12,9 @@ tools/__pycache__/
 tools/autotune_last_run.log
 tools/.font-cache/
 
-# OC 私有（family-private，永不入库；源与 overlay 在 moyu-playbook）
+# Private overlay art — never commit
 main/sprites/oc/
 sdkconfig.oc
 
-# 素材源与中间产物不在本仓（两仓规范 2026-09-09，见 moyu-playbook assets/）
+# Source art / intermediates do not live in this repo
 assets/
