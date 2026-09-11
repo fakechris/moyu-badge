@@ -11,6 +11,7 @@
 > 每个调参旋钮（TUN_*）必须在本文件 §9 参数总表登记，模型版本号必须与代码一致，
 > 否则 HOST GATES 直接失败。**改代码不改文档 = 门红。**
 
+- 游戏需求+概览（发散）：moyu-playbook `docs/GAME_BRIEF.md`；可读 as-built：`docs/GAME.md`。
 - 历史文档：moyu-playbook `docs/GAMEPLAY_V5.md`（v5→v10 的体系层，本文的母本）、
   `docs/COMBAT_V2.md`（V2 战斗设计）、`docs/DESIGN.md`（早期设计）——均已冻结，仅作考古。
 - 背单词需求+概览：moyu-playbook `docs/VOCAB_BRIEF.md`；详细机制：`docs/VOCAB.md`（§10「§词汇子系统」的落点）。
