@@ -76,6 +76,7 @@ static const char *const EN[S_COUNT] = {
     [S_VOCAB_REV_HINT] = "Think EN, OK=flip", [S_VOCAB_NEXT] = "Any key=next",
     [S_VOCAB_REV_EMPTY] = "No learned words yet",
     [S_VOCAB_REVERSE] = "Rev", [S_VOCAB_PICK] = "UP=1 OK=2 DOWN=3",
+    [S_VOCAB_ORDER] = "New cards", [S_VOCAB_SEQ] = "A-Z", [S_VOCAB_SHUFFLE] = "shuffle",
 };
 
 static const char *const ZH[S_COUNT] = {
@@ -150,6 +151,7 @@ static const char *const ZH[S_COUNT] = {
     [S_VOCAB_REV_HINT] = "想好英文 OK=看答案", [S_VOCAB_NEXT] = "任意键=下一个",
     [S_VOCAB_REV_EMPTY] = "还没有已学词",
     [S_VOCAB_REVERSE] = "反向", [S_VOCAB_PICK] = "上=1 OK=2 下=3",
+    [S_VOCAB_ORDER] = "新词出场", [S_VOCAB_SEQ] = "顺序", [S_VOCAB_SHUFFLE] = "乱序",
 };
 
 const char *deskpet_tr(deskpet_str_id_t id, deskpet_lang_t lang)

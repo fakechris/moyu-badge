@@ -103,6 +103,7 @@ static uint16_t s_day;
 static uint16_t s_new_day;   // day stamp of the counter
 static uint16_t s_new_count; // new words served on that day
 static uint16_t s_new_cap = VOCAB_NEW_DEFAULT; // user setting, persisted
+static uint8_t s_new_order = VOCAB_NEW_SEQ;    // new-word gather: A-Z vs shuffle
 
 static void vocab_budget_save(void) {
 #ifdef ESP_PLATFORM
@@ -110,6 +111,7 @@ static void vocab_budget_save(void) {
     if (nvs_open(VOCAB_NVS_NS, NVS_READWRITE, &h) != ESP_OK) return;
     nvs_set_blob(h, "budget", &s_new_day, sizeof(s_new_day) + sizeof(s_new_count));
     nvs_set_blob(h, "cap", &s_new_cap, sizeof(s_new_cap));
+    nvs_set_blob(h, "nord", &s_new_order, sizeof(s_new_order));
     nvs_commit(h);
     nvs_close(h);
 #endif
@@ -151,6 +153,11 @@ static void vocab_nvs_load(void) {
     sz = sizeof(s_new_cap);
     if (nvs_get_blob(h, "cap", &s_new_cap, &sz) != ESP_OK)
         s_new_cap = VOCAB_NEW_DEFAULT;
+    sz = sizeof(s_new_order);
+    if (nvs_get_blob(h, "nord", &s_new_order, &sz) != ESP_OK)
+        s_new_order = VOCAB_NEW_SEQ;
+    else
+        s_new_order = s_new_order ? VOCAB_NEW_SHUFFLE : VOCAB_NEW_SEQ;
     nvs_close(h);
 #endif
 }
@@ -208,16 +215,41 @@ static void budget_rollover(void) {
 // rotation was tried and reverted: the start point advanced only a few
 // positions per day, so every morning began near the same early-alphabet
 // region and users lost track of which "batch" they were in.
-static int next_new_word(void) {
-    if (s_new_count >= s_new_cap) return -1;
+static int next_unseen_sequential(void)
+{
+    for (uint16_t i = 0; i < s_count; i++)
+        if (s_states[i].reps == 0) return (int)i;
+    return -1;
+}
+
+static int next_unseen_shuffle(void)
+{
+    uint16_t n = 0;
+    for (uint16_t i = 0; i < s_count; i++)
+        if (s_states[i].reps == 0) n++;
+    if (n == 0) return -1;
+    // Mix day + already-served so each draw in a day differs; no extra
+    // bitmap — unseen is still reps==0. Switch back to SEQ fills holes.
+    uint32_t x = (uint32_t)vocab_day_number() * 2654435761u
+               + (uint32_t)s_new_count * 2246822519u;
+    x ^= x >> 16;
+    uint16_t k = (uint16_t)(x % n);
     for (uint16_t i = 0; i < s_count; i++) {
-        if (s_states[i].reps == 0) {
-            s_new_count++;
-            vocab_nvs_save(i); // persist budget alongside word state
-            return (int)i;
-        }
+        if (s_states[i].reps != 0) continue;
+        if (k == 0) return (int)i;
+        k--;
     }
     return -1;
+}
+
+static int next_new_word(void) {
+    if (s_new_count >= s_new_cap) return -1;
+    int idx = (s_new_order == VOCAB_NEW_SHUFFLE)
+              ? next_unseen_shuffle() : next_unseen_sequential();
+    if (idx < 0) return -1;
+    s_new_count++;
+    vocab_nvs_save((uint16_t)idx);
+    return idx;
 }
 
 int vocab_next_due(void) {
@@ -338,6 +370,14 @@ void vocab_extend_budget(uint16_t n)
     // 超额背词: un-consume n serves so next_new_word admits n more today
     budget_rollover();
     s_new_count = (s_new_count > n) ? (uint16_t)(s_new_count - n) : 0;
+    vocab_budget_save();
+}
+
+uint8_t vocab_new_order(void) { return s_new_order; }
+
+void vocab_set_new_order(uint8_t order)
+{
+    s_new_order = order ? VOCAB_NEW_SHUFFLE : VOCAB_NEW_SEQ;
     vocab_budget_save();
 }
 

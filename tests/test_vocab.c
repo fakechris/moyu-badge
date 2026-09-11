@@ -130,6 +130,7 @@ void test_daily_budget(void) {
     // budget survives vocab_init on purpose (mode re-entry must not refill);
     // land on a fresh day so earlier tests' consumption doesn't leak in.
     vocab_test_advance_days(1);
+    vocab_set_new_order(VOCAB_NEW_SEQ);
     // 20 fresh words, cap 15: the 16th request must be refused same-day
     static char terms[20][16], phons[20][16], defs[20][16];
     vocab_entry_t many[20];
@@ -268,6 +269,41 @@ void test_collect_learned_batch_cap(void) {
     printf("  collect_learned_batch_cap OK\n");
 }
 
+void test_new_order_shuffle_then_seq_fills_holes(void) {
+    vocab_test_advance_days(1);
+    static char terms[20][16], phons[20][16], defs[20][16];
+    vocab_entry_t many[20];
+    for (int i = 0; i < 20; i++) {
+        snprintf(terms[i], sizeof(terms[i]), "s%02d", i);
+        snprintf(phons[i], sizeof(phons[i]), "/s%d/", i);
+        snprintf(defs[i], sizeof(defs[i]), "d%d", i);
+        many[i].term = terms[i];
+        many[i].phonetic = phons[i];
+        many[i].definition = defs[i];
+        many[i].distractors[0] = (uint16_t)((i + 1) % 20);
+        many[i].distractors[1] = (uint16_t)((i + 2) % 20);
+    }
+    vocab_init(many, 20);
+    vocab_set_daily_cap(5);
+    vocab_set_new_order(VOCAB_NEW_SHUFFLE);
+    uint8_t hit[20] = {0};
+    for (int i = 0; i < 5; i++) {
+        int idx = vocab_next_due();
+        assert(idx >= 0 && idx < 20);
+        assert(hit[idx] == 0);
+        hit[idx] = 1;
+        vocab_review((uint16_t)idx, VOCAB_GOOD);
+    }
+    vocab_set_new_order(VOCAB_NEW_SEQ);
+    vocab_set_daily_cap(20);
+    int expect = 0;
+    while (expect < 20 && vocab_get_state((uint16_t)expect)->reps > 0) expect++;
+    assert(expect < 20);
+    assert(vocab_next_due() == expect);      // sequential fills the first hole
+    vocab_set_new_order(VOCAB_NEW_SEQ);
+    printf("  new_order_shuffle_then_seq_fills_holes OK\n");
+}
+
 int main(void) {
     test_fsrs_basic();
     test_fsrs_retrievability();
@@ -278,6 +314,7 @@ int main(void) {
     test_forget_new_advances_and_counts_once();
     test_collect_learned_vs_due();
     test_collect_learned_batch_cap();
+    test_new_order_shuffle_then_seq_fills_holes();
     printf("ALL VOCAB FSRS TESTS PASS\n");
     return 0;
 }

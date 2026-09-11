@@ -88,10 +88,14 @@ uint16_t vocab_mastered_words(void); // stability >= 21 days
 // user setting (5/10/15/20/30, default 15) persisted in NVS, and the user can
 // extend today's budget post-session ("超额背词") by un-consuming serves.
 #define VOCAB_NEW_DEFAULT 15
+#define VOCAB_NEW_SEQ     0
+#define VOCAB_NEW_SHUFFLE 1
 uint16_t vocab_new_served_today(void);
 uint16_t vocab_new_daily_cap(void);          // current setting
 void vocab_set_daily_cap(uint16_t cap);      // persists
 void vocab_extend_budget(uint16_t n);        // un-consume n serves (超额)
+uint8_t vocab_new_order(void);               // SEQ or SHUFFLE; only next_new_word
+void vocab_set_new_order(uint8_t order);     // persists; switch anytime
 // Words already introduced (reps>0) whose retrievability dropped below 90%.
 uint16_t vocab_review_due_count(void);
 // Words shown at least once (reps > 0) — the "learned" counter that moves

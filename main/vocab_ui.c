@@ -23,7 +23,7 @@ extern const lv_font_t zh_subset;
 
 #define RQ_MAX 64            // session requeue ring capacity
 #define EXTEND_STEP 10       // 超额再背 batch size
-#define MENU_ROWS 4
+#define MENU_ROWS 5
 
 typedef enum {
     ST_STUDY = 0, ST_MENU, ST_REV_RECALL, ST_REV_CHOICE, ST_REV_CHOICE_ANSWER,
@@ -220,7 +220,8 @@ static void show_menu(void)
     s_state = ST_MENU;
     s_current = (uint16_t)-1;
     static const deskpet_str_id_t ROW_KEY[MENU_ROWS] = {
-        S_VOCAB_EXTRA, S_VOCAB_CAP, S_VOCAB_REV_RECALL, S_VOCAB_REV_CHOICE
+        S_VOCAB_EXTRA, S_VOCAB_CAP, S_VOCAB_REV_RECALL, S_VOCAB_REV_CHOICE,
+        S_VOCAB_ORDER
     };
     char rows[MENU_ROWS][48];
     char buf[256];
@@ -232,6 +233,12 @@ static void show_menu(void)
             snprintf(rows[r], sizeof(rows[r]), "%s: %d",
                      deskpet_tr(S_VOCAB_CAP, deskpet_get_lang()),
                      vocab_new_daily_cap());
+            txt = rows[r];
+        } else if (r == 4) {
+            snprintf(rows[r], sizeof(rows[r]), "%s: %s",
+                     deskpet_tr(S_VOCAB_ORDER, deskpet_get_lang()),
+                     deskpet_tr(vocab_new_order() ? S_VOCAB_SHUFFLE : S_VOCAB_SEQ,
+                                deskpet_get_lang()));
             txt = rows[r];
         } else txt = deskpet_tr(ROW_KEY[r], deskpet_get_lang());
         off += snprintf(buf + off, sizeof(buf) - (size_t)off, "%c %s\n",
@@ -379,7 +386,11 @@ void vocab_ui_button(int btn)
                 }
             }
             else if (s_menu_row == 2) { audio_se(CT_SE_OK); rev_start(ST_REV_RECALL); return; }
-            else { audio_se(CT_SE_OK); rev_start(ST_REV_CHOICE); return; }
+            else if (s_menu_row == 3) { audio_se(CT_SE_OK); rev_start(ST_REV_CHOICE); return; }
+            else {                               // row 4: 顺序 <-> 乱序
+                vocab_set_new_order(vocab_new_order() ? VOCAB_NEW_SEQ
+                                                      : VOCAB_NEW_SHUFFLE);
+            }
         }
         audio_se(CT_SE_OK);
         show_menu();
