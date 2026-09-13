@@ -213,12 +213,18 @@ The firmware is officially live on the AI Passport Play Community. Connect your 
 2. 打开 [FoloToy 官方网页刷机工具](https://ai-passport.folotoy.cn/tools/web-flasher/)；
 3. 选择预编译好的固件 `FoloToy-AI-Passport-full.bin`，烧录起始地址填 `0x0`，点击连接并开始烧录。
 
-### 3. 日常应用分区更新（开发者）
-已搭建本地开发环境时，运行仓库内置工具：
-```bash
-tools/flash.sh
-```
-此脚本仅烧录应用分区，**不会清除 NVS 存档数据**。  
+### 3. 日常应用分区更新（开发者 / Daily App Flash）
+已搭建本地开发环境时，运行仓库内置烧录工具（自动识别串口、只烧录 factory 分区、**保留 NVS 游戏/背词存档**并自动校准设备时钟）：
+- **macOS / Linux / Git Bash**：
+  ```bash
+  tools/flash.sh
+  ```
+- **Windows (CMD / PowerShell)**：
+  ```bat
+  python tools/flash.py
+  :: 或双击 / 执行：
+  tools\flash.bat
+  ```
 > 🚨 **安全底线**：严禁执行 `erase-flash`！万一遇到固件异常，开机时按住 **UP 键 5 秒** 即可随时进入硬件出厂内置的 Recovery 恢复模式。
 
 ---
@@ -230,25 +236,43 @@ tools/flash.sh
 - Python 3.10+ 环境
 - BSP 依赖路径（默认位于 `../my-ai-passport/ai-passport/components`，可通过 `DESKPET_BSP_DIR` 环境变量覆盖）
 
-### 2. 编译与检查命令
+### 2. 编译与烧录命令
+- **macOS / Linux**：
+  ```bash
+  # 激活 ESP-IDF 环境
+  source ~/esp/esp-idf-v5.5.3/export.sh
+  # 编译固件
+  idf.py build
+  # 烧录到设备
+  tools/flash.sh
+  ```
+- **Windows (PowerShell / CMD)**：
+  ```powershell
+  # 激活 ESP-IDF 环境 (PowerShell)
+  . $HOME\esp\esp-idf-v5.5.3\export.ps1
+  # 或 CMD: %userprofile%\esp\esp-idf-v5.5.3\export.bat
+
+  # 编译固件
+  idf.py build
+  # 生成一体化镜像
+  idf.py merge-bin -o build/FoloToy-AI-Passport-full.bin
+  # 烧录到设备
+  python tools/flash.py
+  ```
+
+### 3. PC 桌面模拟器 (Simulator)
+无需物理设备即可在电脑上调试界面与玩法（支持 macOS / Linux / Windows）：
 ```bash
-# 1. 激活 ESP-IDF 编译工具链环境
-source ~/esp/esp-idf-v5.5.3/export.sh
+# 依赖：SDL2 开发库（Windows 推荐 vcpkg install sdl2 或官网包；macOS: brew install sdl2）
+cmake -B sim/build -S sim
+cmake --build sim/build --config Release
 
-# 2. 编译应用固件
-idf.py build
-
-# 3. 生成一体化烧录镜像 (0x0 起始)
-idf.py merge-bin -o build/FoloToy-AI-Passport-full.bin
-
-# 4. 运行 Host 本地门禁测试（单测、FSRS 数值模型、词库校验、音频校验）
-tools/validate-host.sh
-
-# 5. 校验 Flash 分区预算
-python3 tools/budget.py
+# 运行模拟器（键盘方向键 = 上下键，Enter/Space = OK 键，长按 >0.9s = 全局模式切换）
+# macOS/Linux: ./sim/build/deskpet-sim
+# Windows:     sim\build\Release\deskpet-sim.exe
 ```
 
-### 3. 目录架构说明
+### 4. 目录架构说明
 ```text
 main/        固件源码、LVGL 界面、FSRS 核心算法、公版精灵素材、字库产物与词表
 tools/       烧录脚本、Host 回归门禁、设计文档校验与固件体积预算工具
