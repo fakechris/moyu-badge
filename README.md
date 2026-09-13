@@ -227,6 +227,22 @@ The firmware is officially live on the AI Passport Play Community. Connect your 
   ```
 > 🚨 **安全底线**：严禁执行 `erase-flash`！万一遇到固件异常，开机时按住 **UP 键 5 秒** 即可随时进入硬件出厂内置的 Recovery 恢复模式。
 
+### 4. GitHub Release（CI 预编译包）
+打 `v*` tag（或在 Actions 里手动跑 **Release firmware**）会用 ESP-IDF **v5.5.3** / `esp32c3` 编译，并在 Release 页挂上：
+
+| 产物 | 用途 |
+|---|---|
+| `deskpet-game.bin` | factory @ `0x10000`，配合 `tools/flash.py`（保留 NVS） |
+| `deskpet-full-8MB.bin` | 整片 8MB @ `0x0`，可用网页刷机 |
+| `SHA256SUMS.txt` / `BUILD_INFO.txt` | 校验和与钉死的 IDF / BSP commit |
+
+下载 factory 后本地刷：
+```bash
+mkdir -p build && cp deskpet-game.bin build/
+python tools/flash.py
+```
+BSP 版本钉在 `.github/workflows/release-firmware.yml` 的 `BSP_REF`；升级 BSP 时改该 SHA。
+
 ---
 
 ## 构建与开发 / Build & Development
