@@ -39,10 +39,11 @@ jobs:
           target: esp32c3
           extra_docker_args: >-
             -e DESKPET_BSP_DIR=/app/${{ github.repository }}/deps/ai-passport/components
+          # merge-bin runs with cwd=build/, so -o is relative to build/ (not repo root).
           command: >-
             idf.py set-target esp32c3
             && idf.py build
-            && idf.py merge-bin -o build/deskpet-full-8MB.bin
+            && idf.py merge-bin -o deskpet-full-8MB.bin
 
       - name: Collect artifacts + checksums
         run: |
