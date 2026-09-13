@@ -231,61 +231,149 @@ The firmware is officially live on the AI Passport Play Community. Connect your 
 
 ## 构建与开发 / Build & Development
 
-### 1. 环境准备
-- ESP-IDF **v5.5.3**（Windows：`%USERPROFILE%\esp\esp-idf-v5.5.3`，先跑 `install.bat esp32c3` 再 `export.ps1`）
-- Python 3.10+（Windows 建议安装官方 Python，并关掉 Microsoft Store 的 `python.exe` 别名）
-- BSP 依赖路径（默认位于 `../my-ai-passport/ai-passport/components`，可通过 `DESKPET_BSP_DIR` 环境变量覆盖）
-- Host 门 / sim（可选）：C 编译器（Linux/`cc`，Windows 可用 LLVM clang 或 VS Build Tools）、CMake、Ninja；sim 另需 **SDL2** 开发库
+> 只想装到设备、不开发：用上文「玩法社区一键安装」或网页刷机即可，无需本机工具链。  
+> 下面是**本地编译 + 刷 factory 分区**的流程。Windows 从零搭建见 **§1b**（已在干净 Win10/11 上验证到 `FLASH OK` + 串口 `pet ready`）。
 
-### 2. 编译与烧录命令
-- **macOS / Linux**：
-  ```bash
-  # 激活 ESP-IDF 环境
-  source ~/esp/esp-idf-v5.5.3/export.sh
-  # 编译固件
-  idf.py build
-  # 烧录到设备
-  tools/flash.sh
-  ```
-- **Windows (PowerShell / CMD)**：
-  ```powershell
-  # 激活 ESP-IDF 环境 (PowerShell)
-  . $HOME\esp\esp-idf-v5.5.3\export.ps1
-  # 或 CMD: %userprofile%\esp\esp-idf-v5.5.3\export.bat
+### 1. 依赖一览
+| 用途 | 需要 |
+|---|---|
+| 编固件 / 刷机 | ESP-IDF **v5.5.3**、官方 Python 3.10+、Git、旁边检出的 BSP |
+| PC 模拟器（可选） | CMake、Ninja、VS 2022 Build Tools（或 clang）、SDL2 |
+| Host 门（可选） | 同上 C 编译器 + 旁边检出 `moyu-playbook` |
 
-  # 编译固件
-  idf.py set-target esp32c3   # 首次
-  idf.py build
-  # 生成一体化镜像
-  idf.py merge-bin -o build/FoloToy-AI-Passport-full.bin
-  # 烧录到设备
-  python tools/flash.py
-  ```
+默认目录约定（可改，但命令示例按此写）：
 
-### 3. PC 桌面模拟器 (Simulator)
-无需物理设备即可在电脑上调试界面与玩法（支持 macOS / Linux / Windows）：
-```bash
-# 依赖：SDL2 开发库
-#   macOS: brew install sdl2
-#   Windows: 官方 SDL2-devel VC 包，或 vcpkg install sdl2；配置时传 -DSDL2_DIR=...
-cmake -B sim/build -S sim
-cmake --build sim/build --config Release
-
-# 运行模拟器（键盘方向键 = 上下键，Enter/Space = OK 键，长按 >0.9s = 全局模式切换）
-# macOS/Linux: ./sim/build/deskpet-sim
-# Windows (Ninja): sim\build\deskpet-sim.exe   （需同目录有 SDL2.dll）
-# Windows (MSVC 多配置): sim\build\Release\deskpet-sim.exe
+```text
+C:\Workspace\moyu-badge              ← 本仓
+C:\Workspace\moyu-playbook           ← 研究仓（host 门 / balance_sim）
+C:\Workspace\my-ai-passport\ai-passport   ← BSP（components/）
+%USERPROFILE%\esp\esp-idf-v5.5.3     ← ESP-IDF
 ```
 
-Host 回归门（无硬件、无 ESP-IDF；需旁边检出 `../moyu-playbook`）：
-```bash
-# macOS / Linux
-tools/validate-host.sh
+BSP 路径可用环境变量覆盖：`DESKPET_BSP_DIR=...\ai-passport\components`。
 
-# Windows（Git Bash + clang 示例）
+### 1b. Windows 从零搭建（推荐路径）
+
+以下步骤按顺序做即可在另一台 Windows 上复现。
+
+#### A. 基础工具
+1. 安装 [Git for Windows](https://git-scm.com/download/win)。
+2. 安装 [Python 3.12](https://www.python.org/downloads/)（勾选 **Add python.exe to PATH**）。
+3. **关掉 Microsoft Store 别名**：设置 → 应用 → 高级应用设置 → 应用执行别名 → 关闭 `python.exe` / `python3.exe`。  
+   在新的 PowerShell 里确认：
+   ```powershell
+   where.exe python
+   # 应指向 ...\AppData\Local\Programs\Python\Python3xx\python.exe
+   # 不要只有 WindowsApps\python.exe
+   python --version
+   ```
+4. （可选，编 sim / host 门）用 winget 安装：
+   ```powershell
+   winget install -e --id Kitware.CMake
+   winget install -e --id Ninja-build.Ninja
+   winget install -e --id LLVM.LLVM
+   winget install -e --id Microsoft.VisualStudio.2022.BuildTools `
+     --override "--wait --quiet --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+   ```
+
+#### B. ESP-IDF v5.5.3
+```powershell
+New-Item -ItemType Directory -Force -Path "$HOME\esp" | Out-Null
+git clone -b v5.5.3 --recursive https://github.com/espressif/esp-idf.git "$HOME\esp\esp-idf-v5.5.3"
+cd $HOME\esp\esp-idf-v5.5.3
+.\install.bat esp32c3
+```
+每次新开终端编译前激活：
+```powershell
+. $HOME\esp\esp-idf-v5.5.3\export.ps1
+# 确认：
+idf.py --version
+```
+
+#### C. 克隆本仓、BSP、（可选）playbook
+```powershell
+cd C:\Workspace
+git clone https://github.com/fakechris/moyu-badge.git
+git clone https://github.com/FoloToy/ai-passport.git my-ai-passport\ai-passport
+# host 门需要：
+git clone <your-moyu-playbook-url> moyu-playbook
+```
+确认 BSP 存在：`C:\Workspace\my-ai-passport\ai-passport\components\bsp`。
+
+#### D. 编译固件
+```powershell
+cd C:\Workspace\moyu-badge
+. $HOME\esp\esp-idf-v5.5.3\export.ps1
+idf.py set-target esp32c3   # 仅首次 / 换目标时
+idf.py build
+# 成功标志：生成 build\deskpet-game.bin，末尾 Project build complete
+```
+
+#### E. 刷机（只写 factory，保留 NVS）
+用 **USB 数据线**连上 AI Passport（设备管理器里应出现 `USB 串行设备 (COMx)`，VID `303A` / PID `1001`）。
+```powershell
+cd C:\Workspace\moyu-badge
+# flash.py 会自动找 Espressif Python + 串口；也可先 export.ps1
+python tools\flash.py
+# 成功标志：FLASH OK: new firmware is live
+# 可选：校时 / 看 8 秒启动日志
+python tools\flash.py settime
+python tools\flash.py log 8
+# 日志中应有：DeskPet standalone boot … pet ready
+```
+> 🚨 **严禁** `erase-flash` / `idf.py erase-flash`。异常时开机按住 **UP 5 秒** 进 Recovery。
+
+#### F. （可选）桌面模拟器
+1. 下载 [SDL2-devel VC](https://github.com/libsdl-org/SDL/releases) 并解压到例如 `C:\Workspace\SDL2`。
+2. 在仓库里可放一个最小 `SDL2\cmake\SDL2Config.cmake` 指向 `lib\x64\SDL2.lib`（或改用 vcpkg，且需完整 VS 实例）。
+3. 在 **x64 Native Tools** / VsDevCmd 环境中：
+   ```powershell
+   cd C:\Workspace\moyu-badge
+   cmake -B sim\build -S sim -G Ninja -DCMAKE_BUILD_TYPE=Release -DSDL2_DIR=C:/Workspace/SDL2/cmake
+   cmake --build sim\build --config Release
+   copy C:\Workspace\SDL2\lib\x64\SDL2.dll sim\build\
+   .\sim\build\deskpet-sim.exe
+   ```
+键位：方向键 = UP/DOWN，Enter/Space = OK，长按 OK >0.9s = 模式切换。
+
+#### G. （可选）Host 门
+需 `..\moyu-playbook`。Git Bash + clang 示例：
+```bash
+export PATH="/c/Program Files/LLVM/bin:$PATH"
 export CC=clang
 export REPO_PLAYBOOK=/c/Workspace/moyu-playbook
-bash tools/validate-host.sh
+# Windows CRT 弃用警告会在 -Werror 下炸掉，加宏：
+# 或改用 MSYS2/MinGW 的 gcc，接近 Linux validate-host.sh
+cd /c/Workspace/moyu-badge
+FLAGS='-std=c11 -Wall -Wextra -Werror -Wno-sign-compare -D_CRT_SECURE_NO_WARNINGS'
+# 完整门禁仍建议在 Linux/macOS 或 WSL 跑：bash tools/validate-host.sh
+```
+
+#### 常见坑
+| 现象 | 处理 |
+|---|---|
+| `python` 提示去 Microsoft Store | 关应用执行别名，重开终端 |
+| CMake `Invalid character escape '\U'` | 使用已含 `file(TO_CMAKE_PATH)` 的 bootloader hook（main 线已修） |
+| `idf.py` → `No module named 'click'` | 未激活 IDF：先 `. export.ps1`，或用 `%USERPROFILE%\.espressif\python_env\idf5.5_*\Scripts\python.exe` |
+| 找不到 BSP / `bsp` 组件 | 检查 `..\my-ai-passport\ai-passport\components` 或设 `DESKPET_BSP_DIR` |
+| 刷机找不到端口 | 换数据线（需数据口）、装 USB 驱动、确认 VID 303A |
+| sim 链接缺 `audio_se` | 使用当前 main（host 分支已提供 stub） |
+| `check_design_doc` / scorecard GBK 报错 | 用 UTF-8 读文件的当前脚本；设 `PYTHONUTF8=1` 更稳 |
+
+### 2. macOS / Linux 编译与烧录
+```bash
+source ~/esp/esp-idf-v5.5.3/export.sh
+idf.py set-target esp32c3   # 首次
+idf.py build
+tools/flash.sh
+```
+
+### 3. PC 桌面模拟器（macOS / Linux）
+```bash
+# macOS: brew install sdl2
+cmake -B sim/build -S sim
+cmake --build sim/build --config Release
+./sim/build/deskpet-sim
 ```
 
 ### 4. 目录架构说明
