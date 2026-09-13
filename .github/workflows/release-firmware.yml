@@ -1,0 +1,102 @@
+# Build deskpet firmware on tag / manual dispatch and attach bins to GitHub Release.
+# Requires FoloToy/ai-passport BSP (pinned below for reproducible builds).
+
+name: Release firmware
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  IDF_VERSION: v5.5.3
+  # Bump this SHA when intentionally upgrading BSP; do not float on main.
+  BSP_REPO: FoloToy/ai-passport
+  BSP_REF: 7b85c4a1298119243d7a08318ce3e969139c6c6f
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout moyu-badge
+        uses: actions/checkout@v4
+
+      - name: Checkout BSP (ai-passport)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.BSP_REPO }}
+          ref: ${{ env.BSP_REF }}
+          path: deps/ai-passport
+
+      - name: Build firmware (ESP-IDF ${{ env.IDF_VERSION }} / esp32c3)
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ env.IDF_VERSION }}
+          target: esp32c3
+          extra_docker_args: >-
+            -e DESKPET_BSP_DIR=/app/${{ github.repository }}/deps/ai-passport/components
+          command: >-
+            idf.py set-target esp32c3
+            && idf.py build
+            && idf.py merge-bin -o build/deskpet-full-8MB.bin
+
+      - name: Collect artifacts + checksums
+        run: |
+          set -euo pipefail
+          test -f build/deskpet-game.bin
+          test -f build/deskpet-full-8MB.bin
+          mkdir -p dist
+          cp build/deskpet-game.bin dist/deskpet-game.bin
+          cp build/deskpet-full-8MB.bin dist/deskpet-full-8MB.bin
+          (
+            cd dist
+            sha256sum deskpet-game.bin deskpet-full-8MB.bin > SHA256SUMS.txt
+          )
+          {
+            echo "IDF=${IDF_VERSION}"
+            echo "TARGET=esp32c3"
+            echo "BSP=${BSP_REPO}@${BSP_REF}"
+            echo "COMMIT=${GITHUB_SHA}"
+            echo "REF=${GITHUB_REF}"
+          } > dist/BUILD_INFO.txt
+          ls -lh dist
+          cat dist/BUILD_INFO.txt
+          cat dist/SHA256SUMS.txt
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deskpet-firmware
+          path: dist/
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            ## Firmware artifacts
+
+            | File | Use |
+            |---|---|
+            | `deskpet-game.bin` | Factory app @ `0x10000` — for `python tools/flash.py` (keeps NVS) |
+            | `deskpet-full-8MB.bin` | Full 8MB image @ `0x0` — for [web flasher](https://ai-passport.folotoy.cn/tools/web-flasher/) |
+            | `SHA256SUMS.txt` / `BUILD_INFO.txt` | Checksums and pinned IDF/BSP |
+
+            **Do not** `erase-flash`. Recovery: hold **UP** 5s at boot.
+
+            Local flash after download:
+            ```bash
+            mkdir -p build && cp deskpet-game.bin build/
+            python tools/flash.py
+            ```
+          files: |
+            dist/deskpet-game.bin
+            dist/deskpet-full-8MB.bin
+            dist/SHA256SUMS.txt
+            dist/BUILD_INFO.txt

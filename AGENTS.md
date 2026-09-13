@@ -14,6 +14,7 @@
 | `sender/` | agent 状态 BLE 推送客户端 |
 | `tools/` | 仅发布工具：`validate-host.sh`、`flash.sh`、`flash.py`、`flash.bat`、`product_check.sh`、`budget.py`、`check_design_doc.py`、`gen_build_time.cmake` |
 | `docs/` | `SYSTEM_DESIGN.md`、`RELEASE_CANDIDATES.md`、`docs/screenshots/`（README 实机图） |
+| `.github/workflows/` | 发版必需 CI（如 tag 编 `deskpet-game.bin` / 挂 GitHub Release） |
 
 ## 本仓禁止的内容
 
