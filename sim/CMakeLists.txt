@@ -72,7 +72,11 @@ target_compile_definitions(deskpet-sim PRIVATE LV_CONF_INCLUDE_SIMPLE)
 # Windows / MSVC compatibility
 if(MSVC)
     target_compile_definitions(deskpet-sim PRIVATE _CRT_SECURE_NO_WARNINGS)
-    target_compile_options(deskpet-sim PRIVATE /FI"${CMAKE_SOURCE_DIR}/stubs/win32_compat.h")
+    # Avoid nested quotes: Ninja+MSVC would pass /FI"path" as a literal filename.
+    target_compile_options(deskpet-sim PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/stubs/win32_compat.h"
+        /utf-8
+        /experimental:c11atomics)
 elseif(WIN32)
     target_compile_options(deskpet-sim PRIVATE -include "${CMAKE_SOURCE_DIR}/stubs/win32_compat.h")
 endif()

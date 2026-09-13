@@ -77,6 +77,37 @@
 #ifndef TUN_PRICE_SMOKE      // peddler price = BASE + floor: deep escapes
 #define TUN_PRICE_SMOKE 15   // cost real money, so smoke stops being a free
 #endif                        // chest handout (was: no purchase path at all)
+// F-template job mastery (playbook balance_sim probes; job_lv>=12 unlocks)
+#ifndef TUN_KNIGHT_MASTERY_LV
+#define TUN_KNIGHT_MASTERY_LV 12
+#endif
+#ifndef TUN_KNIGHT_SHIELD_BONUS
+#define TUN_KNIGHT_SHIELD_BONUS 2   // start shield 6 -> 8
+#endif
+#ifndef TUN_WHITE_MASTERY_LV
+#define TUN_WHITE_MASTERY_LV 12
+#endif
+#ifndef TUN_WHITE_POTION_BONUS_PCT
+#define TUN_WHITE_POTION_BONUS_PCT 50  // potion 40% -> 90% max HP
+#endif
+#ifndef TUN_BLACK_MASTERY_LV
+#define TUN_BLACK_MASTERY_LV 12
+#endif
+#ifndef TUN_BLACK_HARVEST_ESSENCE
+#define TUN_BLACK_HARVEST_ESSENCE 1    // +essence per kill
+#endif
+#ifndef TUN_THIEF_MASTERY_LV
+#define TUN_THIEF_MASTERY_LV 12
+#endif
+#ifndef TUN_THIEF_RATION_SMOKE
+#define TUN_THIEF_RATION_SMOKE 2       // dive kit smoke count at mastery
+#endif
+#ifndef TUN_DARK_MASTERY_LV
+#define TUN_DARK_MASTERY_LV 12
+#endif
+#ifndef TUN_DARK_RATION_ESSENCE
+#define TUN_DARK_RATION_ESSENCE 15     // dive kit essence at mastery
+#endif
 #ifndef TUN_PRICE_POT
 #define TUN_PRICE_POT 20
 #endif
@@ -499,13 +530,32 @@ static void job_rations(dungeon_save_t *s)
     // Top-up to the job's baseline kit (bounded — swap-spam gains nothing):
     // the F4-8 pack attrition (needs/survived ~1.0-1.3) killed fresh first
     // lives; each job's baseline prep shifts that ratio its own way (B1).
+    // Mastery (job_lv>=12) deepens thief/dark kits — playbook balance_sim.
     switch (s->main_job) {
         case JOB_KNIGHT: if (s->shield_pool < 3) s->shield_pool = 3; break;
         case JOB_WHITE:  if (s->cons[CONS_POTION] < 1) s->cons[CONS_POTION] = 1; break;
-        case JOB_THIEF:  if (s->cons[CONS_SMOKE] < 1) s->cons[CONS_SMOKE] = 1; break;
-        case JOB_DARK:   if (s->essence < 10) s->essence = 10; break;
+        case JOB_THIEF: {
+            uint8_t smoke = (s->job_lv[JOB_THIEF] >= TUN_THIEF_MASTERY_LV)
+                ? (uint8_t)TUN_THIEF_RATION_SMOKE : 1;
+            if (s->cons[CONS_SMOKE] < smoke) s->cons[CONS_SMOKE] = smoke;
+            break;
+        }
+        case JOB_DARK: {
+            uint16_t ess = (s->job_lv[JOB_DARK] >= TUN_DARK_MASTERY_LV)
+                ? (uint16_t)TUN_DARK_RATION_ESSENCE : 10;
+            if (s->essence < ess) s->essence = ess;
+            break;
+        }
         default: break;
     }
+}
+
+static uint8_t knight_start_shield(const dungeon_save_t *s)
+{
+    uint8_t sh = 6;
+    if (s->job_lv[JOB_KNIGHT] >= TUN_KNIGHT_MASTERY_LV)
+        sh = (uint8_t)(sh + TUN_KNIGHT_SHIELD_BONUS);
+    return sh;
 }
 
 // Job changes re-weight max HP (m_hp10): keep current HP inside the new cap.
@@ -711,7 +761,7 @@ static void start_battle(dungeon_save_t *s, bool boss)
         s->codex |= (1u << 8);   // collection: gatekeeper entry
         codex_maze_first(s, 0);  // v13: maze-N first gate boss
         s->shield_pool = 0;
-        if (s->main_job == JOB_KNIGHT) s->shield_pool = 6;
+        if (s->main_job == JOB_KNIGHT) s->shield_pool = knight_start_shield(s);
         if (dungeon_item_has_affix(s->armor_affix, AF_GUARD))
             s->shield_pool = (uint8_t)(s->shield_pool + 4 + 2 * s->armor_rar);
         if (dungeon_item_has_affix(s->weapon_affix, AF_GUARD))
@@ -762,7 +812,7 @@ static void start_battle(dungeon_save_t *s, bool boss)
         log_push(s, buf);
     }
     s->shield_pool = 0;
-    if (s->main_job == JOB_KNIGHT) s->shield_pool = 6;
+    if (s->main_job == JOB_KNIGHT) s->shield_pool = knight_start_shield(s);
     if (dungeon_item_has_affix(s->armor_affix, AF_GUARD))
         s->shield_pool = (uint8_t)(s->shield_pool + 4 + 2 * s->armor_rar);
     if (dungeon_item_has_affix(s->weapon_affix, AF_GUARD))
@@ -1483,9 +1533,12 @@ bool dungeon_use_cons(dungeon_save_t *s, dungeon_cons_t kind)
     if (kind == CONS_POTION) {
         uint16_t mh = max_hp_of(s);
         uint16_t hp = s->hp_cur;
-        hp = (uint16_t)(hp + mh * 4 / 10 > mh ? mh : hp + mh * 4 / 10);
+        uint8_t pct = 40;
+        if (s->main_job == JOB_WHITE && s->job_lv[JOB_WHITE] >= TUN_WHITE_MASTERY_LV)
+            pct = (uint8_t)(pct + TUN_WHITE_POTION_BONUS_PCT);
+        hp = (uint16_t)(hp + mh * pct / 100 > mh ? mh : hp + mh * pct / 100);
         s->hp_cur = hp;
-        log_push(s, "Potion +40%");
+        log_push(s, pct >= 90 ? "Potion +90%" : "Potion +40%");
     } else if (kind == CONS_SMOKE) {
         flee_room(s);   // the ancient presence lets you go... this time
         log_push(s, "Smoke! fled room");
@@ -2059,6 +2112,11 @@ static dungeon_event_t clear_battle(dungeon_save_t *s, uint64_t now_ms)
         uint16_t heal = (uint16_t)(mh / 12 * dead);
         s->hp_cur = (uint16_t)(s->hp_cur + heal > mh ? mh : s->hp_cur + heal);
     }
+    // Black mastery: +essence per kill (identity harvest).
+    if (dead && s->main_job == JOB_BLACK
+        && s->job_lv[JOB_BLACK] >= TUN_BLACK_MASTERY_LV)
+        s->essence = sat_add(s->essence,
+            (uint16_t)(TUN_BLACK_HARVEST_ESSENCE * dead));
     s->n_enemy = 0;
     s->enemy_slow = s->enemy_weak = s->enemy_dot = 0;
     s->shield_pool = 0;

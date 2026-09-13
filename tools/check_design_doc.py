@@ -24,9 +24,9 @@ if not PLAYBOOK.exists():
 DOC = ROOT / "docs" / "SYSTEM_DESIGN.md"
 fail = []
 
-src_c = (ROOT / "main" / "dungeon_model.c").read_text()
-src_h = (ROOT / "main" / "dungeon_model.h").read_text()
-doc = DOC.read_text() if DOC.exists() else ""
+src_c = (ROOT / "main" / "dungeon_model.c").read_text(encoding="utf-8")
+src_h = (ROOT / "main" / "dungeon_model.h").read_text(encoding="utf-8")
+doc = DOC.read_text(encoding="utf-8") if DOC.exists() else ""
 
 # --- 1. knob coverage -------------------------------------------------------
 knobs = set(re.findall(r"^#(?:define|ifndef)\s+(TUN_[A-Z0-9_]+)", src_c + src_h, re.M))
@@ -48,8 +48,8 @@ elif m_code.group(1) != m_doc.group(1):
                 " -- update docs/SYSTEM_DESIGN.md header + §10")
 
 # --- 3. gate-name presence in harness code ----------------------------------
-sim = (PLAYBOOK / "tools" / "balance_sim.c").read_text() if (PLAYBOOK / "tools" / "balance_sim.c").exists() else ""
-bench = (PLAYBOOK / "tools" / "benchmark.c").read_text() if (PLAYBOOK / "tools" / "benchmark.c").exists() else ""
+sim = (PLAYBOOK / "tools" / "balance_sim.c").read_text(encoding="utf-8") if (PLAYBOOK / "tools" / "balance_sim.c").exists() else ""
+bench = (PLAYBOOK / "tools" / "benchmark.c").read_text(encoding="utf-8") if (PLAYBOOK / "tools" / "benchmark.c").exists() else ""
 for gate_kw, gate_name in [("G1", "G1 wall"), ("G4", "G4"), ("G6", "G6"),
                            ("treadmill", "treadmill"), ("prestige_loop", "prestige_loop")]:
     if gate_kw not in sim:
