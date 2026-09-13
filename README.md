@@ -232,9 +232,10 @@ The firmware is officially live on the AI Passport Play Community. Connect your 
 ## 构建与开发 / Build & Development
 
 ### 1. 环境准备
-- ESP-IDF **v5.5.3**
-- Python 3.10+ 环境
+- ESP-IDF **v5.5.3**（Windows：`%USERPROFILE%\esp\esp-idf-v5.5.3`，先跑 `install.bat esp32c3` 再 `export.ps1`）
+- Python 3.10+（Windows 建议安装官方 Python，并关掉 Microsoft Store 的 `python.exe` 别名）
 - BSP 依赖路径（默认位于 `../my-ai-passport/ai-passport/components`，可通过 `DESKPET_BSP_DIR` 环境变量覆盖）
+- Host 门 / sim（可选）：C 编译器（Linux/`cc`，Windows 可用 LLVM clang 或 VS Build Tools）、CMake、Ninja；sim 另需 **SDL2** 开发库
 
 ### 2. 编译与烧录命令
 - **macOS / Linux**：
@@ -253,6 +254,7 @@ The firmware is officially live on the AI Passport Play Community. Connect your 
   # 或 CMD: %userprofile%\esp\esp-idf-v5.5.3\export.bat
 
   # 编译固件
+  idf.py set-target esp32c3   # 首次
   idf.py build
   # 生成一体化镜像
   idf.py merge-bin -o build/FoloToy-AI-Passport-full.bin
@@ -263,13 +265,27 @@ The firmware is officially live on the AI Passport Play Community. Connect your 
 ### 3. PC 桌面模拟器 (Simulator)
 无需物理设备即可在电脑上调试界面与玩法（支持 macOS / Linux / Windows）：
 ```bash
-# 依赖：SDL2 开发库（Windows 推荐 vcpkg install sdl2 或官网包；macOS: brew install sdl2）
+# 依赖：SDL2 开发库
+#   macOS: brew install sdl2
+#   Windows: 官方 SDL2-devel VC 包，或 vcpkg install sdl2；配置时传 -DSDL2_DIR=...
 cmake -B sim/build -S sim
 cmake --build sim/build --config Release
 
 # 运行模拟器（键盘方向键 = 上下键，Enter/Space = OK 键，长按 >0.9s = 全局模式切换）
 # macOS/Linux: ./sim/build/deskpet-sim
-# Windows:     sim\build\Release\deskpet-sim.exe
+# Windows (Ninja): sim\build\deskpet-sim.exe   （需同目录有 SDL2.dll）
+# Windows (MSVC 多配置): sim\build\Release\deskpet-sim.exe
+```
+
+Host 回归门（无硬件、无 ESP-IDF；需旁边检出 `../moyu-playbook`）：
+```bash
+# macOS / Linux
+tools/validate-host.sh
+
+# Windows（Git Bash + clang 示例）
+export CC=clang
+export REPO_PLAYBOOK=/c/Workspace/moyu-playbook
+bash tools/validate-host.sh
 ```
 
 ### 4. 目录架构说明

@@ -5,11 +5,14 @@
 #include "chiptune.h"
 
 #include <stddef.h>
+#include <string.h>
 
 // ---- weak frontend: sim/host links these; audio_task.c overrides ----------
+#if defined(__GNUC__) || defined(__clang__)
 __attribute__((weak)) void audio_bgm_scene(int scene) { (void)scene; }
 __attribute__((weak)) void audio_se(int se) { (void)se; }
 __attribute__((weak)) void audio_idle_feed(void) {}
+#endif
 
 #define VOL_MAX 32000   // per-sample clip ceiling (leave headroom for SE + BGM)
 // Gain staging (2026-09-05 device fix): the old units (vel*2600 per voice,
@@ -55,25 +58,12 @@ static void noise_tick(ct_state_t *st)
 // ---- lifecycle -------------------------------------------------------------
 void ct_init(ct_state_t *st)
 {
+    memset(st, 0, sizeof(*st));
     for (int i = 0; i < CT_CH_N; i++) {
-        st->idx[i] = 0;
-        st->step_left[i] = 0;
-        st->step_len[i] = 0;
-        st->phase[i] = 0;
-        st->inc[i] = 0;
-        st->env[i] = 0;
-        st->wrapped[i] = 0;
-        st->tick[i] = 0;
         s_duty[i] = 32768;
     }
-    st->arr = 0;
     st->lfsr = 0xACE1;
-    st->lfsr_div = 0;
-    st->se_active = 0;
-    st->se_step = 0;
-    st->se_left = 0;
     st->since_se = CT_SR;   // allow the first SE immediately
-    st->idle = 0;
     st->bgm_vol = 45;       // research: small speaker distorts past ~50
     st->se_vol = 70;
 }

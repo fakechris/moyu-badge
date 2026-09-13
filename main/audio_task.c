@@ -188,10 +188,13 @@ void audio_task_start(void)
     }
 }
 
-#else  // host build: no-op (weak stubs in chiptune.c already exist)
+#else  // host build: no-op frontend (MSVC has no weak symbols)
 static audio_prefs_t s_prefs = {1, 0, 0, 0};
 static uint8_t s_hv_bgm = 15, s_hv_se = 40;
 void audio_task_start(void) {}
+void audio_bgm_scene(int scene) { (void)scene; }
+void audio_se(int se) { (void)se; }
+void audio_idle_feed(void) {}
 void audio_set_volumes(uint8_t bgm, uint8_t se) { s_hv_bgm = bgm; s_hv_se = se; }
 void audio_get_volumes(uint8_t *bgm, uint8_t *se) { if (bgm) *bgm = s_hv_bgm; if (se) *se = s_hv_se; }
 void audio_prefs_get(audio_prefs_t *out) { *out = s_prefs; }
