@@ -12,7 +12,7 @@
 | `main/` | 固件代码 + `main/sprites/generic` 打包公版素材 + 字体/词表生成产物 |
 | `tests/` + `sim/` | 固件回归门（host 可跑）；sim 自包含 vendored LVGL |
 | `sender/` | agent 状态 BLE 推送客户端 |
-| `tools/` | 仅发布工具：`validate-host.sh`、`flash.sh`、`product_check.sh`、`budget.py`、`check_design_doc.py`、`gen_build_time.cmake` |
+| `tools/` | 仅发布工具：`validate-host.sh`、`flash.sh`、`flash.py`、`flash.bat`、`product_check.sh`、`budget.py`、`check_design_doc.py`、`gen_build_time.cmake` |
 | `docs/` | `SYSTEM_DESIGN.md`、`RELEASE_CANDIDATES.md`、`docs/screenshots/`（README 实机图） |
 
 ## 本仓禁止的内容

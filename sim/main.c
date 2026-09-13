@@ -8,6 +8,7 @@
 #include "bsp_button.h"
 #include "demo_deskpet.h"
 
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -147,6 +148,7 @@ int main(int argc, char **argv)
         if (!strcmp(argv[i], "--script") && i + 1 < argc) script = argv[++i];
         else if (!strcmp(argv[i], "--shot") && i + 1 < argc) shot = argv[++i];
     }
+    SDL_SetMainReady();
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         printf("SDL init failed: %s\n", SDL_GetError());
         return 1;

@@ -9,22 +9,46 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
 #include <sys/time.h>
+#endif
 
 // ---- esp_timer ----
 int64_t esp_timer_get_time(void)
 {
+#ifdef _WIN32
+    static LARGE_INTEGER freq;
+    static int init = 0;
+    if (!init) {
+        QueryPerformanceFrequency(&freq);
+        init = 1;
+    }
+    LARGE_INTEGER counter;
+    QueryPerformanceCounter(&counter);
+    return (int64_t)((counter.QuadPart * 1000000LL) / freq.QuadPart);
+#else
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
+#endif
 }
 
 // ---- NVS: tiny file-backed k/v (namespace.key -> blob), sim/.nvs.bin ----
 static const char *nvs_path(void)
 {
     static char p[512];
+#ifdef _WIN32
+    const char *tmp = getenv("TEMP");
+    if (!tmp) tmp = getenv("TMP");
+    if (!tmp) tmp = ".";
+    snprintf(p, sizeof(p), "%s\\deskpet-sim-nvs.bin", tmp);
+#else
     const char *tmp = getenv("TMPDIR");
     snprintf(p, sizeof(p), "%sdeskpet-sim-nvs.bin", tmp ? tmp : "/tmp/");
+#endif
     return p;
 }
 
